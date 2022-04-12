@@ -101,6 +101,7 @@ public class CopybookServiceImpl implements CopybookService {
    * each other.
    *
    * @param copybookName - the name of the copybook to be retrieved
+   * @param programDocumentUri - the currently processing program document
    * @param documentUri - the currently processing document that contains the copy statement
    * @param copybookConfig - contains config info like: copybook processing mode, target backend sql
    *     server
@@ -108,12 +109,12 @@ public class CopybookServiceImpl implements CopybookService {
    */
   public CopybookModel resolve(
       @NonNull CopybookName copybookName,
+      @NonNull String programDocumentUri,
       @NonNull String documentUri,
       @NonNull CopybookConfig copybookConfig) {
     try {
-      return copybookCache.get(
-          copybookName.getProcessingName(),
-          () -> resolveSync(copybookName, documentUri, copybookConfig));
+      String copybookId = copybookName.getProcessingName(programDocumentUri);
+      return copybookCache.get(copybookId, () -> resolveSync(copybookName, documentUri, copybookConfig));
     } catch (ExecutionException | UncheckedExecutionException | ExecutionError e) {
       LOG.error("Can't resolve copybook '{}'.", copybookName, e);
       return new CopybookModel(copybookName, null, null);
@@ -121,8 +122,9 @@ public class CopybookServiceImpl implements CopybookService {
   }
 
   @Override
-  public void store(CopybookModel copybookModel) {
-    copybookCache.put(copybookModel.getCopybookName().getProcessingName(), copybookModel);
+  public void store(CopybookModel copybookModel, String documentUri) {
+    String copybookId = copybookModel.getCopybookName().getProcessingName(documentUri);
+    copybookCache.put(copybookId, copybookModel);
   }
 
   private CopybookModel resolveSync(

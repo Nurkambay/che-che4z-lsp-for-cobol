@@ -73,6 +73,12 @@ public class CopybookHierarchy {
     recursiveReplaceStmtStack.pollFirst();
   }
 
+  /** @return root document URI */
+  public String getRootDocumentUri() {
+    return copybookStack.peekLast() == null
+            ? null
+            : copybookStack.peekLast().getLocality().getUri();
+  }
   /**
    * Add a pattern for replacing from COPY statement
    *

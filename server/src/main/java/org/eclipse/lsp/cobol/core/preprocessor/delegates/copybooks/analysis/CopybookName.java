@@ -38,11 +38,11 @@ public class CopybookName {
   }
 
   /**
-   * Creates a processing copybook name using a name and a dialect type
-   *
+   * Creates a processing copybook name (cache id) using a name and a dialect type
+   * @param documentUri Document with COPY instruction for this copybook.
    * @return a processing copybook name
    */
-  public String getProcessingName() {
-    return String.format("%s#%s", qualifiedName, dialectType);
+  public String getProcessingName(String documentUri) {
+    return String.format("%s#%s#%s", qualifiedName, dialectType, documentUri);
   }
 }
