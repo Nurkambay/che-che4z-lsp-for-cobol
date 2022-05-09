@@ -19,6 +19,7 @@ import lombok.experimental.UtilityClass;
 import org.eclipse.lsp.cobol.core.model.Locality;
 import org.eclipse.lsp.cobol.core.model.tree.Node;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 
 import java.util.Optional;
 
@@ -74,6 +75,16 @@ public class RangeUtils {
    */
   public boolean isBefore(Position after, Position before) {
     return compareTo(after, before) < 0;
+  }
+
+  /**
+   * Test if text document position resides inside the range.
+   * @param position the position of the node to add
+   * @param range the range of the node
+   * @return true if position is inside the location.
+   */
+  public static boolean isInside(Position position, Range range) {
+    return isBefore(position, range.getStart()) && isAfter(range.getEnd(), position);
   }
 
   /**

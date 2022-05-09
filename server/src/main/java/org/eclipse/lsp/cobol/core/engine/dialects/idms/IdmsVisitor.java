@@ -62,9 +62,7 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 import static java.util.Optional.ofNullable;
@@ -108,7 +106,9 @@ class IdmsVisitor extends IdmsParserBaseVisitor<List<Node>> {
     textReplacement.addReplacementContext(ctx);
 
     Locality locality = VisitorHelper.buildNameRangeLocality(optionsContext, copybookName.getDisplayName(), programDocumentUri);
-    CopyNode node = new CopyNode(locality, copybookName.getDisplayName());
+    CopyNode node = new CopyNode(locality.toBuilder()
+        .copybookId(UUID.randomUUID().toString())
+        .build(), copybookName.getDisplayName());
     visitChildren(ctx).forEach(node::addChild);
 
     Location location = new Location();

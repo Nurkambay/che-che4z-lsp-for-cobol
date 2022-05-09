@@ -63,6 +63,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.antlr.v4.runtime.Lexer.HIDDEN;
 import static org.eclipse.lsp.cobol.core.CobolParser.*;
+import static org.eclipse.lsp.cobol.core.model.tree.Node.hasType;
 import static org.eclipse.lsp.cobol.core.model.tree.variables.VariableDefinitionUtil.*;
 import static org.eclipse.lsp.cobol.core.semantics.outline.OutlineNodeNames.FILLER_NAME;
 import static org.eclipse.lsp.cobol.core.visitor.VisitorHelper.*;
@@ -122,8 +123,9 @@ public class CobolVisitor extends CobolParserBaseVisitor<List<Node>> {
             .map(
                 rootNode -> {
                   visitChildren(ctx).forEach(rootNode::addChild);
+                  adjustSectionRanges(rootNode);
                   addCopyNodes(rootNode, copybooks.getUsages());
-                  addDialectsNode(rootNode);
+                  addDialectsNodes(rootNode);
                   return rootNode;
                 })
             .orElseGet(
@@ -133,7 +135,25 @@ public class CobolVisitor extends CobolParserBaseVisitor<List<Node>> {
                 }));
   }
 
-  private void addDialectsNode(Node rootNode) {
+  private void adjustSectionRanges(Node node) {
+    Node[] nodes = node.getChildren().stream()
+        .filter(hasType(NodeType.SECTION))
+        .toArray(Node[]::new);
+
+    if (nodes.length > 1) {
+      for (int i = 0; i < nodes.length - 1; i++) {
+        Range range1 = nodes[i].getLocality().getRange();
+        Range range2 = nodes[i + 1].getLocality().getRange();
+        if (range2.getStart().getLine() - 1 > range1.getEnd().getLine()) {
+          range1.setEnd(new Position(range2.getStart().getLine() - 1, range1.getEnd().getCharacter()));
+        }
+      }
+    } else {
+      node.getChildren().forEach(this::adjustSectionRanges);
+    }
+  }
+
+  private void addDialectsNodes(Node rootNode) {
     for (Node dialectNode : dialectNodes) {
       RangeUtils.findNodeByPosition(
               rootNode,
@@ -967,9 +987,26 @@ public class CobolVisitor extends CobolParserBaseVisitor<List<Node>> {
     for (Map.Entry<String, Location> copybook : copybookUsages.entries()) {
       String name = copybook.getKey();
       Range range = copybook.getValue().getRange();
-      rootNode.addChild(
-          new CopyNode(
-              Locality.builder().range(range).uri(copybook.getValue().getUri()).build(), name));
+
+      String copybookId = copybooks.getDefinitionStatements().entrySet().stream()
+          .filter(e -> RangeUtils.isInside(e.getValue().getRange().getStart(), range))
+          .findFirst()
+          .map(Map.Entry::getKey)
+          .orElse(null);
+
+      CopyNode copyNode = new CopyNode(
+          Locality.builder()
+              .range(range)
+              .uri(copybook.getValue().getUri())
+              .copybookId(copybookId)
+              .build(), name);
+
+      RangeUtils.findNodeByPosition(
+              rootNode,
+              copyNode.getLocality().getUri(),
+              copyNode.getLocality().getRange().getStart())
+          .orElse(rootNode)
+          .addChild(copyNode);
     }
   }
 }

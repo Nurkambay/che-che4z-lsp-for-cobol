@@ -634,7 +634,7 @@ reportClause
 // -- working storage section ----------------------------------
 
 workingStorageSection
-   : WORKING_STORAGE SECTION DOT_FS  dataDescriptionEntryForWorkingStorageSection*
+   : WORKING_STORAGE SECTION DOT_FS  (dataDescriptionEntryForWorkingStorageSection* | dialectNodeFiller)
    ;
 // -- linkage section ----------------------------------
 

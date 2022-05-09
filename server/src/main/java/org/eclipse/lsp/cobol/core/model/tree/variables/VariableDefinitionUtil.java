@@ -127,40 +127,65 @@ public class VariableDefinitionUtil {
    * @return a list of unwrapped variables
    */
   private List<VariableDefinitionNode> unwrapVariables(Node node) {
-    List<VariableDefinitionNode> variables = new ArrayList<>();
+    List<Node> orderedChildren = new ArrayList<>();
     List<CopyNode> copybooks = new LinkedList<>();
+    Map<String, CopyNode> copybookMap = new HashMap<>();
 
     node.getChildren()
         .forEach(c -> {
           if (c.getNodeType() == NodeType.VARIABLE_DEFINITION) {
-            variables.add((VariableDefinitionNode) c);
+            orderedChildren.add(c);
           }
           if (c.getNodeType() == NodeType.COPY) {
             copybooks.add((CopyNode) c);
+            copybookMap.put(c.getLocality().getCopybookId(), (CopyNode) c);
           }
         });
+
+    //TODO: Remove after moving MAID to separate dialect
+    new ArrayList<>(orderedChildren).stream()
+        .filter(v -> v.getLocality().getCopybookId() != null)
+        .forEach(v -> Optional.ofNullable(copybookMap.get(v.getLocality().getCopybookId()))
+            .ifPresent(c -> {
+              c.addChild(v);
+              orderedChildren.remove(v);
+            }));
 
     copybooks.forEach(copyNode -> {
       int copybookLine = copyNode.getLocality().getRange().getStart().getLine();
       String uri = copyNode.getLocality().getUri();
-      AtomicInteger index = new AtomicInteger();
-      for (Node variable : variables) {
-        int variableLine = variable.getLocality().getRange().getStart().getLine();
-        if (variable.getLocality().getUri().equals(uri) && variableLine > copybookLine) {
-          break;
-        }
-        index.incrementAndGet();
-      }
+      List<Node> sameUrlVariables = orderedChildren.stream()
+          .filter(v -> v.getLocality().getUri().equals(uri))
+          .collect(Collectors.toList());
 
+      AtomicInteger index = new AtomicInteger();
+      if (sameUrlVariables.size() > 0) {
+        index.set(orderedChildren.size());
+        for (Node variable : sameUrlVariables) {
+          int variableLine = variable.getLocality().getRange().getStart().getLine();
+          if (variableLine > copybookLine) {
+            index.set(orderedChildren.indexOf(variable));
+            break;
+          }
+        }
+      }
+      orderedChildren.add(index.getAndIncrement(), copyNode);
+    });
+
+    copybooks.forEach(copyNode -> {
+      AtomicInteger index = new AtomicInteger(orderedChildren.indexOf(copyNode));
       copyNode.getDepthFirstStream()
           .filter(hasType(NodeType.COPY))
           .flatMap(Node::getDepthFirstStream)
           .filter(hasType(NodeType.VARIABLE_DEFINITION))
           .map(VariableDefinitionNode.class::cast)
           .distinct()
-          .forEach(copyNodeVariable -> variables.add(index.getAndIncrement(), copyNodeVariable));
+          .forEach(copyNodeVariable -> orderedChildren.add(index.incrementAndGet(), copyNodeVariable));
     });
-    return variables;
+
+    return orderedChildren.stream().filter(hasType(NodeType.VARIABLE_DEFINITION))
+        .map(VariableDefinitionNode.class::cast)
+        .collect(Collectors.toList());
   }
 
   /**
