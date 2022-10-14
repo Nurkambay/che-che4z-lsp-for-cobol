@@ -20,7 +20,6 @@ import org.eclipse.lsp.cobol.core.model.ErrorSource;
 import org.eclipse.lsp.cobol.usecases.engine.UseCaseEngine;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
-import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.junit.jupiter.api.Test;
 
@@ -77,8 +76,8 @@ class TestProgramContexts {
         ImmutableMap.of(
             "1",
             new Diagnostic(
-                new Range(new Position(15, 21), new Position(15, 28)),
-                "Duplicated definition for VARNAME",
+                new Range(),
+                "Ambiguous reference for VARNAME",
                 DiagnosticSeverity.Error,
                 ErrorSource.PARSING.getText())));
   }

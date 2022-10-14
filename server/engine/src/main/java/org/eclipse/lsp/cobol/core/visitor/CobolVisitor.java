@@ -400,7 +400,7 @@ public class CobolVisitor extends CobolParserBaseVisitor<List<Node>> {
   @Override
   public List<Node> visitSectionName(SectionNameContext ctx) {
     return addTreeNode(
-        ctx, locality -> new SectionNameNode(locality, ctx.getText(), messageService, symbolService));
+        ctx, locality -> new SectionNameNode(locality, ctx.getText(), symbolService));
   }
 
   @Override

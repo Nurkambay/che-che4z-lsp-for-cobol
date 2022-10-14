@@ -17,7 +17,6 @@ package org.eclipse.lsp.cobol.service.delegates.completions;
 
 import com.google.common.collect.ImmutableList;
 import org.eclipse.lsp.cobol.core.engine.symbols.SymbolService;
-import org.eclipse.lsp.cobol.core.messages.MessageService;
 import org.eclipse.lsp.cobol.core.model.Locality;
 import org.eclipse.lsp.cobol.core.model.tree.*;
 import org.eclipse.lsp.cobol.core.model.tree.variables.MnemonicNameNode;
@@ -25,8 +24,6 @@ import org.eclipse.lsp.cobol.core.model.tree.variables.VariableNode;
 import org.eclipse.lsp.cobol.core.semantics.CopybooksRepository;
 import org.eclipse.lsp.cobol.service.CobolDocumentModel;
 import org.eclipse.lsp.cobol.service.delegates.validations.AnalysisResult;
-
-import static org.mockito.Mockito.mock;
 
 /** This class stores a model to assert the completion providers */
 class MockCompletionModel {
@@ -59,7 +56,7 @@ class MockCompletionModel {
             name -> {
               SectionNameNode nameNode =
                   new SectionNameNode(
-                      Locality.builder().build(), name, mock(MessageService.class), SYMBOL_SERVICE);
+                      Locality.builder().build(), name, SYMBOL_SERVICE);
               SYMBOL_SERVICE.registerSectionNameNode(programNode, nameNode);
             });
 

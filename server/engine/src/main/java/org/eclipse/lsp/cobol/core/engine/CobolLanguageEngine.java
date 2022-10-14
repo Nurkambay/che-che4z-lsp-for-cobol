@@ -319,7 +319,7 @@ public class CobolLanguageEngine {
         new ProcessorDescription(
             SectionNameNode.class,
             ProcessingPhase.DEFINITION,
-            new SectionNameRegister(symbolService)));
+            new SectionNameRegister(symbolService, messageService)));
     ctx.register(
         new ProcessorDescription(
             ParagraphNameNode.class,

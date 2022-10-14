@@ -19,16 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.lsp.cobol.core.engine.processor.ProcessingContext;
 import org.eclipse.lsp.cobol.core.engine.processor.Processor;
 import org.eclipse.lsp.cobol.core.engine.symbols.SymbolService;
-import org.eclipse.lsp.cobol.core.messages.MessageTemplate;
-import org.eclipse.lsp.cobol.core.model.ErrorSeverity;
-import org.eclipse.lsp.cobol.core.model.ErrorSource;
-import org.eclipse.lsp.cobol.core.model.SyntaxError;
 import org.eclipse.lsp.cobol.core.model.tree.FigurativeConstants;
 import org.eclipse.lsp.cobol.core.model.tree.Node;
 import org.eclipse.lsp.cobol.core.model.tree.NodeType;
 import org.eclipse.lsp.cobol.core.model.tree.variables.QualifiedReferenceNode;
 import org.eclipse.lsp.cobol.core.model.tree.variables.VariableNode;
 import org.eclipse.lsp.cobol.core.model.tree.variables.VariableUsageNode;
+import org.eclipse.lsp.cobol.core.preprocessor.delegates.injector.ImplicitCodeUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,7 +34,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class QualifiedReferenceUpdateVariableUsage implements Processor<QualifiedReferenceNode> {
   private static final String NOT_DEFINED_ERROR = "semantics.notDefined";
-  private static final String DUPLICATED_DEFINITION_ERROR = "semantics.duplicated";
+  private static final String AMBIGUOUS_REFERENCE_ERROR = "semantics.ambiguousReference";
 
   private final SymbolService symbolService;
 
@@ -89,7 +86,7 @@ public class QualifiedReferenceUpdateVariableUsage implements Processor<Qualifie
     if (foundDefinitions.size() > 1) {
       foundDefinitions =
           foundDefinitions.stream()
-              .filter(d -> !d.getLocality().getUri().startsWith("implicit:"))
+              .filter(d -> !ImplicitCodeUtils.isImplicit(d.getLocality().getUri()))
               .collect(Collectors.toList());
     }
     if (foundDefinitions.size() == 1) {
@@ -101,17 +98,7 @@ public class QualifiedReferenceUpdateVariableUsage implements Processor<Qualifie
       return;
     }
 
-    SyntaxError error =
-        SyntaxError.syntaxError()
-            .errorSource(ErrorSource.PARSING)
-            .severity(ErrorSeverity.ERROR)
-            .locality(node.getLocality())
-            .messageTemplate(
-                MessageTemplate.of(
-                    foundDefinitions.isEmpty() ? NOT_DEFINED_ERROR : DUPLICATED_DEFINITION_ERROR,
-                    dataName))
-            .build();
-    ctx.getErrors().add(error);
-    LOG.debug("Syntax error by QualifiedReferenceNode " + error.toString());
+    ProcessorUtils.addParsingError(ctx.getErrors(), node.getLocality(), dataName,
+        foundDefinitions.isEmpty() ? NOT_DEFINED_ERROR : AMBIGUOUS_REFERENCE_ERROR);
   }
 }

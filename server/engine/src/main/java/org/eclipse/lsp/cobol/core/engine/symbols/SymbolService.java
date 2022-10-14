@@ -20,12 +20,9 @@ import com.google.common.collect.Multimap;
 import com.google.inject.Singleton;
 import lombok.Value;
 import org.eclipse.lsp.cobol.core.messages.MessageService;
-import org.eclipse.lsp.cobol.core.messages.MessageTemplate;
-import org.eclipse.lsp.cobol.core.model.ErrorSeverity;
-import org.eclipse.lsp.cobol.core.model.ErrorSource;
-import org.eclipse.lsp.cobol.core.model.SyntaxError;
-import org.eclipse.lsp.cobol.core.model.VariableUsageUtils;
+import org.eclipse.lsp.cobol.core.model.*;
 import org.eclipse.lsp.cobol.core.model.tree.*;
+import org.eclipse.lsp.cobol.core.model.tree.logic.ProcessorUtils;
 import org.eclipse.lsp.cobol.core.model.tree.variables.VariableNode;
 import org.eclipse.lsp.cobol.core.model.tree.variables.VariableUsageNode;
 import org.eclipse.lsp.cobol.core.preprocessor.delegates.injector.ImplicitCodeUtils;
@@ -137,10 +134,13 @@ public class SymbolService {
       ProgramNode program, CodeBlockUsageNode node) {
     SymbolTable symbolTable = createOrGetSymbolTable(program);
 
-    final Optional<CodeBlockDefinitionNode> definition =
+    final List<CodeBlockDefinitionNode> definitions =
         symbolTable.getCodeBlocks().stream()
             .filter(it -> it.getName().equals(node.getName()))
-            .findAny();
+            .collect(Collectors.toList());
+
+    Optional<CodeBlockDefinitionNode> definition = definitions.stream().findFirst();
+
     definition.ifPresent(it -> it.addUsage(node.getLocality()));
 
     Optional.ofNullable(symbolTable.getParagraphMap().get(node.getName()))
@@ -148,16 +148,15 @@ public class SymbolService {
     Optional.ofNullable(symbolTable.getSectionMap().get(node.getName()))
         .ifPresent(it -> it.addUsage(node.getLocality().toLocation()));
 
+    if (definitions.size() > 1) {
+      return Optional.of(ProcessorUtils
+          .createParsingError(node.getLocality(), node.getName(), "semantics.ambiguousReference"));
+    }
+
     return definition.isPresent()
         ? Optional.empty()
-        : Optional.of(
-            SyntaxError.syntaxError()
-                .errorSource(ErrorSource.PARSING)
-                .messageTemplate(
-                    MessageTemplate.of("semantics.paragraphNotDefined", node.getName()))
-                .severity(ErrorSeverity.ERROR)
-                .locality(node.getLocality())
-                .build());
+        : Optional.of(ProcessorUtils
+        .createParsingError(node.getLocality(), node.getName(), "semantics.paragraphNotDefined"));
   }
 
   private SymbolTable createOrGetSymbolTable(ProgramNode program) {
@@ -182,7 +181,7 @@ public class SymbolService {
     return Optional.of(
         SyntaxError.syntaxError()
             .errorSource(ErrorSource.PARSING)
-            .suggestion(messageService.getMessage("semantics.duplicated", node.getName()))
+            .suggestion(messageService.getMessage("semantics.ambiguousReference", node.getName()))
             .severity(ERROR)
             .locality(node.getLocality())
             .build());
