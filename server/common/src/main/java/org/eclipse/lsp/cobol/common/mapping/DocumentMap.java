@@ -137,12 +137,15 @@ public class DocumentMap {
       return location;
     }
     MappingService mappingService = maps.pop();
-    Location originalLocation =
+    Optional<Location> originalLocation =
         mappingService
-            .getOriginalLocation(location.getRange())
-            .orElseThrow(IllegalStateException::new);
+            .getOriginalLocation(location.getRange());
 
-    return mapLocation(originalLocation, maps);
+    if (!originalLocation.isPresent()) {
+      throw new IllegalStateException();
+    }
+
+    return mapLocation(originalLocation.get(), maps);
   }
 
   private TextTransformations topTransformations() {
