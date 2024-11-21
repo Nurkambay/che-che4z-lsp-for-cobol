@@ -401,7 +401,7 @@ findObtainClause
     ;
 
 calcClause
-    : (CALC | ANY | DUPLICATE) idms_db_entity_name
+    : (CALC | ANY | DUPLICATE) idms_db_entity_name idmsOnClause?
     ;
 
 currentClause

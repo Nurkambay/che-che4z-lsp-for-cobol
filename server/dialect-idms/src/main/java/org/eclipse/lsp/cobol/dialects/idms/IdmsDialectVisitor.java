@@ -18,13 +18,16 @@ import com.google.common.collect.ImmutableList;
 import lombok.Data;
 import lombok.Getter;
 import org.eclipse.lsp.cobol.common.dialects.DialectProcessingContext;
+import org.eclipse.lsp.cobol.common.mapping.ExtendedText;
 import org.eclipse.lsp.cobol.common.model.Locality;
+import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -101,6 +104,40 @@ class IdmsDialectVisitor extends IdmsParserBaseVisitor<List<IdmsCopybookDescript
     List<IdmsCopybookDescriptor> result = visitChildren(ctx);
     result.addAll(processIdmsRecords());
     return result;
+  }
+
+  @Override
+  public List<IdmsCopybookDescriptor> visitObtainStatement(IdmsParser.ObtainStatementContext ctx) {
+    Optional.ofNullable(ctx.findObtainClause())
+            .map(IdmsParser.FindObtainClauseContext::calcClause)
+            .map(IdmsParser.CalcClauseContext::idmsOnClause)
+            .map(IdmsParser.IdmsOnClauseContext::generalIdentifier)
+            .map(VisitorHelper::getName)
+            .ifPresent(identifier -> {
+              Location location =
+                      context.getExtendedDocument().mapLocation(DialectUtils.constructRange(ctx));
+
+              String generatedText = generateIfStatement(location.getRange().getStart().getCharacter(), identifier);
+              ExtendedText extendedText = new ExtendedText(generatedText, context.getExtendedDocument().getUri());
+              context.getExtendedDocument().insertCopybook(location.getRange().getEnd().getLine() + 1, extendedText);
+            });
+
+    return visitChildren(ctx);
+  }
+
+  private String generateIfStatement(int character, String identifier) {
+    final StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < character; i++) {
+      builder.append(" ");
+    }
+    builder.append("IF NOT ");
+    builder.append(identifier);
+    builder.append(" PERFORM IDMS-STATUS; \n");
+    for (int i = 0; i < character; i++) {
+      builder.append(" ");
+    }
+    builder.append("ELSE");
+    return builder.toString();
   }
 
   private List<IdmsCopybookDescriptor> processIdmsRecords() {
