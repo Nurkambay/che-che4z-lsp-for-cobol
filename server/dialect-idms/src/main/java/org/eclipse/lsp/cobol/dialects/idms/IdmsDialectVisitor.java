@@ -19,7 +19,6 @@ import lombok.Data;
 import lombok.Getter;
 import org.eclipse.lsp.cobol.common.dialects.DialectProcessingContext;
 import org.eclipse.lsp.cobol.common.model.Locality;
-import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
@@ -100,37 +99,6 @@ class IdmsDialectVisitor extends IdmsParserBaseVisitor<List<IdmsCopybookDescript
     List<IdmsCopybookDescriptor> result = visitChildren(ctx);
     result.addAll(processIdmsRecords());
     return result;
-  }
-
-  @Override
-  public List<IdmsCopybookDescriptor> visitIdmsOnClause(IdmsParser.IdmsOnClauseContext ctx) {
-    Optional.ofNullable(ctx)
-            .filter(c -> Objects.nonNull(c.cobolStatements()))
-            .map(IdmsParser.IdmsOnClauseContext::generalIdentifier)
-            .map(VisitorHelper::getName)
-            .ifPresent(identifier -> {
-              Location location =
-                      context.getExtendedDocument().mapLocation(DialectUtils.constructRange(ctx.generalIdentifier()));
-
-              String generatedText = generateIfStatement(location.getRange().getStart().getCharacter(), identifier);
-              Range replaceRange = new Range(location.getRange().getEnd(), location.getRange().getEnd());
-              context.getExtendedDocument().replace(replaceRange, generatedText);
-            });
-
-    return visitChildren(ctx);
-  }
-
-  private String generateIfStatement(int character, String identifier) {
-    final StringBuilder builder = new StringBuilder();
-    builder.append(" ");
-    builder.append("IF NOT ");
-    builder.append(identifier);
-    builder.append(" PERFORM IDMS-STATUS; \n");
-    for (int i = 0; i < character; i++) {
-      builder.append(" ");
-    }
-    builder.append("ELSE ");
-    return builder.toString();
   }
 
   private List<IdmsCopybookDescriptor> processIdmsRecords() {

@@ -121,9 +121,9 @@ class TestDelete {
         BOILERPLATE + DELETE_TABLE,
         BOILERPLATE + DELETE_TABLE_ALL_PARMS,
         BOILERPLATE + DELETE_TABLE_ALL_PARMS_LITERAL,
-        BOILERPLATE + DELETE_QUEUE_ON + Fixtures.idmsStatus(),
-        BOILERPLATE + DELETE_SCRATCH_ON + Fixtures.idmsStatus(),
-        BOILERPLATE + DELETE_TABLE_ON + Fixtures.idmsStatus());
+        BOILERPLATE + DELETE_QUEUE_ON,
+        BOILERPLATE + DELETE_SCRATCH_ON,
+        BOILERPLATE + DELETE_TABLE_ON);
   }
 
   @ParameterizedTest

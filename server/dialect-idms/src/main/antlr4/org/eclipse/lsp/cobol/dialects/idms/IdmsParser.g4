@@ -148,7 +148,7 @@ idmsIfStatement
     ;
 
 idmsStatements
-    : idmsStmtsOptTermOn endClause? idmsOnClause? | idmsStmtsMandTermOn (SEMICOLON_FS idmsOnClause? | DOT_FS)
+    : idmsStmtsOptTermOn endClause? idmsOnClause? | deleteStatement endClause? idmsDeleteOnClause? | idmsStmtsMandTermOn (SEMICOLON_FS idmsOnClause? | DOT_FS)
     ;
 
 
@@ -157,7 +157,7 @@ idmsStmtsOptTermOn
      connectStatement | dcStatement | dequeueStatement | disconnectStatement | endStatement | endpageStatement | enqueueStatement | eraseStatement | findStatement |
      finishStatement | freeStatement | getStatement | inquireMapMoveStatement | keepStatement | loadStatement | mapStatement | modifyStatement | obtainStatement |
      postStatement | putStatement | readyStatement |rollbackStatement | snapStatement | startpageStatement | storeStatement | waitStatement | writeIdmsStatement |
-     readStatement | acceptStatement | deleteStatement | returnStatement | sendStatement | setStatement
+     readStatement | acceptStatement | returnStatement | sendStatement | setStatement
     ;
 
 idmsStmtsMandTermOn
@@ -165,47 +165,11 @@ idmsStmtsMandTermOn
     ;
 
 idmsOnClause
-    : ON generalIdentifier cobolStatements?
+    : ON generalIdentifier nextSentence?
     ;
 
-cobolStatements
-    :  nextSentence | imperativeStatements
-    ;
-
-imperativeStatements
-    : arithmetic | dataMovement | ending | inputOutput | ordering | procedureBranching | linkage | tableHandling
-    ;
-
-arithmetic
-    : ADD | COMPUTE | DIVIDE | MULTIPLY | SUBTRACT
-    ;
-
-dataMovement
-    : ACCEPT | INITIALIZE | INSPECT | JSON (GENERATE | PARSE) | MOVE | SET | STRING | UNSTRING | XML (GENERATE | PARSE)
-    ;
-
-ending
-    : STOP RUN | EXIT PROGRAM | EXIT METHOD | GOBACK
-    ;
-
-inputOutput
-    : (ACCEPT generalIdentifier) | CLOSE | DELETE | DISPLAY | OPEN | READ | REWRITE | START | (STOP literal) | WRITE
-    ;
-
-ordering
-    : ALLOCATE | SORT | FREE | MERGE | RELEASE | RETURN
-    ;
-
-procedureBranching
-    : ALTER | CONTINUE | EXIT | (GO TO) | GOTO | PERFORM
-    ;
-
-linkage
-    : CALL | CANCEL | INVOKE
-    ;
-
-tableHandling
-    : SORT | SET
+idmsDeleteOnClause
+    : ON generalIdentifier nextSentence?
     ;
 
 nextSentence
@@ -437,7 +401,7 @@ keepClause
     ;
 
 findObtainClause
-    : (calcClause | currentClause | ownerClause | recnameClause | dbkeyClause | positionClause)
+    : calcClause | currentClause | ownerClause | recnameClause | dbkeyClause | positionClause
     ;
 
 calcClause
