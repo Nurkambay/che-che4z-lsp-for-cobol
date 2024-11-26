@@ -165,7 +165,47 @@ idmsStmtsMandTermOn
     ;
 
 idmsOnClause
-    : ON generalIdentifier nextSentence?
+    : ON generalIdentifier cobolStatements?
+    ;
+
+cobolStatements
+    :  nextSentence | imperativeStatements
+    ;
+
+imperativeStatements
+    : arithmetic | dataMovement | ending | inputOutput | ordering | procedureBranching | linkage | tableHandling
+    ;
+
+arithmetic
+    : ADD | COMPUTE | DIVIDE | MULTIPLY | SUBTRACT
+    ;
+
+dataMovement
+    : ACCEPT | INITIALIZE | INSPECT | JSON (GENERATE | PARSE) | MOVE | SET | STRING | UNSTRING | XML (GENERATE | PARSE)
+    ;
+
+ending
+    : STOP RUN | EXIT PROGRAM | EXIT METHOD | GOBACK
+    ;
+
+inputOutput
+    : (ACCEPT generalIdentifier) | CLOSE | DELETE | DISPLAY | OPEN | READ | REWRITE | START | (STOP literal) | WRITE
+    ;
+
+ordering
+    : ALLOCATE | SORT | FREE | MERGE | RELEASE | RETURN
+    ;
+
+procedureBranching
+    : ALTER | CONTINUE | EXIT | (GO TO) | GOTO | PERFORM
+    ;
+
+linkage
+    : CALL | CANCEL | INVOKE
+    ;
+
+tableHandling
+    : SORT | SET
     ;
 
 nextSentence
@@ -397,11 +437,11 @@ keepClause
     ;
 
 findObtainClause
-    : calcClause | currentClause | ownerClause | recnameClause | dbkeyClause | positionClause
+    : (calcClause | currentClause | ownerClause | recnameClause | dbkeyClause | positionClause)
     ;
 
 calcClause
-    : (CALC | ANY | DUPLICATE) idms_db_entity_name idmsOnClause?
+    : (CALC | ANY | DUPLICATE) idms_db_entity_name
     ;
 
 currentClause
@@ -781,7 +821,7 @@ waitEventListClause
 // write IDMS
 writeIdmsStatement
    : WRITE (writeJournalClause | writeLineClause | writeLogClause | writePrinterClause | writeTerminalClause |
-            writeThenReadClause) idmsOnClause?
+            writeThenReadClause)
    ;
 
 writeJournalClause
@@ -844,7 +884,7 @@ writeThenReadClause
 
 // read statement
 readStatement
-   : READ (readLineFromTerminalClause | readTerminalClause) idmsOnClause?
+   : READ (readLineFromTerminalClause | readTerminalClause)
    ;
 
 readTerminalClause
@@ -860,7 +900,7 @@ readLineFromTerminalClause
 
 // accept statement
 acceptStatement
-    : ACCEPT (acceptIdmsDcClause idmsOnClause? | acceptIdmsDbClause idmsOnClause?)
+    : ACCEPT (acceptIdmsDcClause | acceptIdmsDbClause)
     ;
 
 acceptIdmsDcClause
@@ -903,7 +943,7 @@ currencyPageInfo
 // delete statement
 
 deleteStatement
-    : DELETE deleteIdmsDCStatement idmsOnClause?
+    : DELETE deleteIdmsDCStatement
     ;
 
 deleteIdmsDCStatement
@@ -933,7 +973,7 @@ deleteTableClause
 // return statment
 
 returnStatement
-    : RETURN idmsReturn idmsOnClause?
+    : RETURN idmsReturn
     ;
 
 idmsReturn
@@ -958,7 +998,7 @@ sendIdmsToClause
 // set statement
 
 setStatement
-    : SET setIdmsDcStatement idmsOnClause?
+    : SET setIdmsDcStatement
     ;
 
 setIdmsDcStatement

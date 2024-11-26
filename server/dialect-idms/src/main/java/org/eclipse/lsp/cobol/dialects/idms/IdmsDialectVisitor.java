@@ -18,16 +18,12 @@ import com.google.common.collect.ImmutableList;
 import lombok.Data;
 import lombok.Getter;
 import org.eclipse.lsp.cobol.common.dialects.DialectProcessingContext;
-import org.eclipse.lsp.cobol.common.mapping.ExtendedText;
 import org.eclipse.lsp.cobol.common.model.Locality;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -107,19 +103,18 @@ class IdmsDialectVisitor extends IdmsParserBaseVisitor<List<IdmsCopybookDescript
   }
 
   @Override
-  public List<IdmsCopybookDescriptor> visitObtainStatement(IdmsParser.ObtainStatementContext ctx) {
-    Optional.ofNullable(ctx.findObtainClause())
-            .map(IdmsParser.FindObtainClauseContext::calcClause)
-            .map(IdmsParser.CalcClauseContext::idmsOnClause)
+  public List<IdmsCopybookDescriptor> visitIdmsOnClause(IdmsParser.IdmsOnClauseContext ctx) {
+    Optional.ofNullable(ctx)
+            .filter(c -> Objects.nonNull(c.cobolStatements()))
             .map(IdmsParser.IdmsOnClauseContext::generalIdentifier)
             .map(VisitorHelper::getName)
             .ifPresent(identifier -> {
               Location location =
-                      context.getExtendedDocument().mapLocation(DialectUtils.constructRange(ctx));
+                      context.getExtendedDocument().mapLocation(DialectUtils.constructRange(ctx.generalIdentifier()));
 
               String generatedText = generateIfStatement(location.getRange().getStart().getCharacter(), identifier);
-              ExtendedText extendedText = new ExtendedText(generatedText, context.getExtendedDocument().getUri());
-              context.getExtendedDocument().insertCopybook(location.getRange().getEnd().getLine() + 1, extendedText);
+              Range replaceRange = new Range(location.getRange().getEnd(), location.getRange().getEnd());
+              context.getExtendedDocument().replace(replaceRange, generatedText);
             });
 
     return visitChildren(ctx);
@@ -127,16 +122,14 @@ class IdmsDialectVisitor extends IdmsParserBaseVisitor<List<IdmsCopybookDescript
 
   private String generateIfStatement(int character, String identifier) {
     final StringBuilder builder = new StringBuilder();
-    for (int i = 0; i < character; i++) {
-      builder.append(" ");
-    }
+    builder.append(" ");
     builder.append("IF NOT ");
     builder.append(identifier);
     builder.append(" PERFORM IDMS-STATUS; \n");
     for (int i = 0; i < character; i++) {
       builder.append(" ");
     }
-    builder.append("ELSE");
+    builder.append("ELSE ");
     return builder.toString();
   }
 
