@@ -128,7 +128,7 @@ ss_names_length
 // statements
 
 ifStatement
-   : IF idmsIfCondition idmsOnClause?
+   : IF idmsIfCondition
    ;
 
 idmsIfCondition
@@ -148,16 +148,20 @@ idmsIfStatement
     ;
 
 idmsStatements
-    : idmsStmtsOptTermOn endClause? idmsOnClause?
+    : idmsStmtsOptTermOn endClause? idmsOnClause? | idmsStmts endClause?
     ;
 
+idmsStmts
+    : abendCodeStatement | attachTaskCodeStatement | changePriorityStatement | checkTerminalStatement |
+     connectStatement | dcStatement | dequeueStatement | disconnectStatement | endStatement | endpageStatement | enqueueStatement | eraseStatement |
+     freeStatement | inquireMapMoveStatement | loadStatement | mapStatement | modifyStatement |
+     postStatement | putStatement | snapStatement | startpageStatement | storeStatement | waitStatement | writeIdmsStatement |
+     readStatement | returnStatement | sendStatement | setStatement | deleteStatement | transferStatement
+    ;
 
 idmsStmtsOptTermOn
-    : abendCodeStatement | attachTaskCodeStatement | bindStatement | changePriorityStatement | checkTerminalStatement | commitStatement |
-     connectStatement | dcStatement | dequeueStatement | disconnectStatement | endStatement | endpageStatement | enqueueStatement | eraseStatement | findStatement |
-     finishStatement | freeStatement | getStatement | inquireMapMoveStatement | keepStatement | loadStatement | mapStatement | modifyStatement | obtainStatement |
-     postStatement | putStatement | readyStatement |rollbackStatement | snapStatement | startpageStatement | storeStatement | waitStatement | writeIdmsStatement |
-     readStatement | acceptStatement | returnStatement | sendStatement | setStatement | deleteStatement | transferStatement
+    : acceptStatement | bindStatement | commitStatement | obtainStatement | findStatement | finishStatement | getStatement |
+     keepStatement | readyStatement | rollbackStatement
     ;
 
 idmsOnClause

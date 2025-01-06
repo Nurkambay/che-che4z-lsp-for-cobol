@@ -20,8 +20,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.lsp.cobol.common.AnalysisResult;
+import org.eclipse.lsp.cobol.common.error.ErrorSource;
 import org.eclipse.lsp.cobol.dialects.idms.utils.DialectConfigs;
 import org.eclipse.lsp.cobol.test.engine.UseCaseEngine;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.Range;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -49,6 +53,28 @@ class IdmsOnClauseTest {
           readFileContent(file),
           ImmutableList.of(),
           ImmutableMap.of(),
+          ImmutableList.of(),
+          DialectConfigs.getIDMSAnalysisConfig());
+
+      assertNotNull(analysisResult);
+    }
+  }
+
+  @Test
+  void negativeTest() throws IOException {
+
+    List<File> files = getFiles("negative");
+
+    for (File file : files) {
+      AnalysisResult analysisResult = UseCaseEngine.runTestForDiagnostics(
+          readFileContent(file),
+          ImmutableList.of(),
+          ImmutableMap.of("1",
+              new Diagnostic(
+                  new Range(),
+                  "ErrorStrategy.reportInputMismatch",
+                  DiagnosticSeverity.Error,
+                  ErrorSource.PARSING.getText())),
           ImmutableList.of(),
           DialectConfigs.getIDMSAnalysisConfig());
 
