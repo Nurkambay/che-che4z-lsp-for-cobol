@@ -9,17 +9,15 @@
        SCHEMA SECTION.                                  
        DB EMPSS01  WITHIN EMPSCHM VERSION 100.          
        WORKING-STORAGE SECTION.   
-       01 WK-FIRST-NAME PIC X(10) VALUE 'CARLA'.                
+       01 FOUND-ECB PIC X(10) VALUE 'CARLA'.                
        01 EOF-PHARM-SW PIC X(1) VALUE 'N'.
        01 TASK-ID PIC X(10).
-       01 DB-REC-NOT-FOUND             VALUE '0326'.
+       01 DB-REC-NOT-FOUND PIC X(10) VALUE '0326'.
 
        PROCEDURE DIVISION.                                      
        100-START.   
 
-           SEND MESSAGE ALWAYS
-            TO LTERM ID 'KENNEDYA'
-            FROM TERM-MESS TO END-TERM-MESS
+           POST EVENT NAME FOUND-ECB CLEAR
               ON DB-REC-NOT-FOUND                          
               MOVE 'Y' TO EOF-PHARM-SW                     
            END-IF.

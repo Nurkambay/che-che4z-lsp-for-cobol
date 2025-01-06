@@ -12,12 +12,12 @@
        01 WK-FIRST-NAME PIC X(10) VALUE 'CARLA'.                
        01 EOF-PHARM-SW PIC X(1) VALUE 'N'.
        01 TASK-ID PIC X(10).
-       01 DB-REC-NOT-FOUND             VALUE '0326'.
+       01 DB-REC-NOT-FOUND PIC X(10) VALUE '0326'.
 
        PROCEDURE DIVISION.                                      
        100-START.   
 
-           STORE TASK-ID
+           DELETE TABLE FROM WK-FIRST-NAME
               ON DB-REC-NOT-FOUND                          
               MOVE 'Y' TO EOF-PHARM-SW                     
            END-IF.

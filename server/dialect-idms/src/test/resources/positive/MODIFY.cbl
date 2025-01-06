@@ -17,7 +17,7 @@
        PROCEDURE DIVISION.                                      
        100-START.   
 
-           ENQUEUE TEST NAME RESOURCE-NAME LENGTH RESOURCE-LENGTH
+           MODIFY TASK-ID
               ON DB-REC-NOT-FOUND                          
               MOVE 'Y' TO EOF-PHARM-SW                     
            END-IF.

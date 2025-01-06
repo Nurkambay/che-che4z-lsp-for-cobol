@@ -9,15 +9,19 @@
        SCHEMA SECTION.                                  
        DB EMPSS01  WITHIN EMPSCHM VERSION 100.          
        WORKING-STORAGE SECTION.   
-       01 WK-FIRST-NAME PIC X(10) VALUE 'CARLA'.                
+       01 OUTPUT-LINE PIC X(10) VALUE 'CARLA'.                
        01 EOF-PHARM-SW PIC X(1) VALUE 'N'.
-       01 TASK-ID PIC X(10).
-       01 DB-REC-NOT-FOUND             VALUE '0326'.
+       01 END-INPUT-LINE PIC X(10).
+       01 INPUT-LINE PIC X(10).
+       01 LINE-LENGTH PIC X(10).
+       01 DB-REC-NOT-FOUND  PIC X(10)  VALUE '0326'.
 
        PROCEDURE DIVISION.                                      
        100-START.   
 
-           SET ABEND EXIT ON PROGRAM 'ABENDRTN'
+           WRITE THEN READ TERMINAL
+            WAIT FROM OUTPUT-LINE TO END-INPUT-LINE
+            INTO INPUT-LINE MAX LENGTH 80 RETURN LENGTH INTO LINE-LENGTH
               ON DB-REC-NOT-FOUND                          
               MOVE 'Y' TO EOF-PHARM-SW                     
            END-IF.

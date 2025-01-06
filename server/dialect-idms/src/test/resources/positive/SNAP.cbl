@@ -9,16 +9,16 @@
        SCHEMA SECTION.                                  
        DB EMPSS01  WITHIN EMPSCHM VERSION 100.          
        WORKING-STORAGE SECTION.   
-       01 WK-FIRST-NAME PIC X(10) VALUE 'CARLA'.                
+       01 SNAP-TITLE PIC X(10) VALUE 'CARLA'.                
        01 EOF-PHARM-SW PIC X(1) VALUE 'N'.
-       01 TASK-ID PIC X(10).
-       01 DB-REC-NOT-FOUND             VALUE '0326'.
+       01 WS-START PIC X(10).
+       01 WS-END PIC X(10).
+       01 DB-REC-NOT-FOUND PIC X(10) VALUE '0326'.
 
        PROCEDURE DIVISION.                                      
        100-START.   
 
-           PUT SCRATCH FROM WORK-PROC-AREA LENGTH 125
-            RECORD ID SCR-REC-ID REPLACE
+           SNAP TITLE IS SNAP-TITLE FROM WS-START TO WS-END
               ON DB-REC-NOT-FOUND                          
               MOVE 'Y' TO EOF-PHARM-SW                     
            END-IF.

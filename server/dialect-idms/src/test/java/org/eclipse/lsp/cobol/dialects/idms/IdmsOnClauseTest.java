@@ -26,15 +26,12 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.eclipse.lsp4j.util.DocumentSymbols.asIterator;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
@@ -43,9 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Slf4j
 class IdmsOnClauseTest {
   @Test
-  void negativeTest() throws IOException {
+  void positiveTest() throws IOException {
 
-    List<File> files = getFiles("negative");
+    List<File> files = getFiles("positive");
 
     for (File file : files) {
       AnalysisResult analysisResult = UseCaseEngine.runTestForDiagnostics(
@@ -60,7 +57,7 @@ class IdmsOnClauseTest {
   }
 
   private List<File> getFiles(String subfolder) {
-    Path negativePath = Paths.get("src","test", "resources", subfolder);
+    Path negativePath = Paths.get("src", "test", "resources", subfolder);
     File negativeFolder = negativePath.toFile();
     return Optional.ofNullable(negativeFolder.listFiles())
         .map(Arrays::stream)

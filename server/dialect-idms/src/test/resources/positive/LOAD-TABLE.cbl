@@ -9,18 +9,17 @@
        SCHEMA SECTION.                                  
        DB EMPSS01  WITHIN EMPSCHM VERSION 100.          
        WORKING-STORAGE SECTION.   
-       01 WK-FIRST-NAME PIC X(10) VALUE 'CARLA'.                
+       01 STATE-TABLE PIC X(10) VALUE 'CARLA'.
        01 EOF-PHARM-SW PIC X(1) VALUE 'N'.
-       01 TASK-ID PIC X(10).
+       01 END-STATE-TABLE PIC X(10).
        01 DB-REC-NOT-FOUND PIC X(10) VALUE '0326'.
 
        PROCEDURE DIVISION.                                      
        100-START.   
 
-           WRITE LINE TO TERMINAL
-            FROM EMPL-HEAD TO END-EMPL-HEAD HEADER 1
-              ON DB-REC-NOT-FOUND                          
-              MOVE 'Y' TO EOF-PHARM-SW                     
+        LOAD TABLE 'STATECON' INTO STATE-TABLE TO END-STATE-TABLE
+              ON DB-REC-NOT-FOUND
+              MOVE 'Y' TO EOF-PHARM-SW
            END-IF.
 
        IDMS-STATUS SECTION.

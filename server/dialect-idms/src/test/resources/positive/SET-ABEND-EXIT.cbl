@@ -17,7 +17,7 @@
        PROCEDURE DIVISION.                                      
        100-START.   
 
-           TRANSFER CONTROL TO PROGRAM-NAME LINK
+           SET ABEND EXIT ON PROGRAM 'ABENDRTN'
               ON DB-REC-NOT-FOUND                          
               MOVE 'Y' TO EOF-PHARM-SW                     
            END-IF.

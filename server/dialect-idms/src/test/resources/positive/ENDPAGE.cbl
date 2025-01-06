@@ -17,11 +17,10 @@
        PROCEDURE DIVISION.                                      
        100-START.   
 
-           DELETE SCRATCH PRIOR RETURN RECORD ID INTO SCR-REC-ID
+           ENDPAGE SESSION
               ON DB-REC-NOT-FOUND                          
               MOVE 'Y' TO EOF-PHARM-SW                     
            END-IF.
-
 
        IDMS-STATUS SECTION.
        IDMS-STATUS-EXIT.

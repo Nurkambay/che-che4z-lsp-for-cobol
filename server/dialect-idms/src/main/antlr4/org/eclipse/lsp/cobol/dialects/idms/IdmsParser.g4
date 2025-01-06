@@ -128,7 +128,7 @@ ss_names_length
 // statements
 
 ifStatement
-   : IF idmsIfCondition
+   : IF idmsIfCondition idmsOnClause?
    ;
 
 idmsIfCondition
@@ -148,7 +148,7 @@ idmsIfStatement
     ;
 
 idmsStatements
-    : idmsStmtsOptTermOn endClause? idmsOnClause? | deleteStatement endClause? idmsDeleteOnClause? | idmsStmtsMandTermOn (SEMICOLON_FS idmsOnClause? | DOT_FS)
+    : idmsStmtsOptTermOn endClause? idmsOnClause?
     ;
 
 
@@ -157,18 +157,10 @@ idmsStmtsOptTermOn
      connectStatement | dcStatement | dequeueStatement | disconnectStatement | endStatement | endpageStatement | enqueueStatement | eraseStatement | findStatement |
      finishStatement | freeStatement | getStatement | inquireMapMoveStatement | keepStatement | loadStatement | mapStatement | modifyStatement | obtainStatement |
      postStatement | putStatement | readyStatement |rollbackStatement | snapStatement | startpageStatement | storeStatement | waitStatement | writeIdmsStatement |
-     readStatement | acceptStatement | returnStatement | sendStatement | setStatement
-    ;
-
-idmsStmtsMandTermOn
-    : transferStatement
+     readStatement | acceptStatement | returnStatement | sendStatement | setStatement | deleteStatement | transferStatement
     ;
 
 idmsOnClause
-    : ON generalIdentifier nextSentence?
-    ;
-
-idmsDeleteOnClause
     : ON generalIdentifier nextSentence?
     ;
 
@@ -319,7 +311,7 @@ dequeueStatement
     ;
 
 dequeueNameStatement
-    : NAME generalIdentifier LENGTH (generalIdentifier | integerLiteral)
+    : NAME? generalIdentifier LENGTH (generalIdentifier | integerLiteral)
     ;
 
 // disconnect statement
@@ -569,7 +561,7 @@ keepLongtermTestClause
 // load Statement
 
 loadStatement
-    : LOAD TABLE (generalIdentifier | idms_table_name) INTO generalIdentifier loadLocationClause idmsDictnodeClause? idmsDictnameClause? loadLoadlibClause? idmsWaitNowaitClause
+    : LOAD TABLE (generalIdentifier | idms_table_name) INTO generalIdentifier loadLocationClause idmsDictnodeClause? idmsDictnameClause? loadLoadlibClause? idmsWaitNowaitClause?
     ;
 
 loadLocationClause
@@ -721,7 +713,7 @@ putRetentionClause
    ;
 
 putScratchClause
-   : SCRATCH putAreaIdClause? idmsDmlFromClause putRecordClause? putReturnClause
+   : SCRATCH putAreaIdClause? idmsDmlFromClause putRecordClause? putReturnClause?
    ;
 
 putAreaIdClause

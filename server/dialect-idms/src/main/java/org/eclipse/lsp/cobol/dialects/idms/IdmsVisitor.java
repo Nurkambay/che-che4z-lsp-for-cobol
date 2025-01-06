@@ -80,6 +80,13 @@ class IdmsVisitor extends IdmsParserBaseVisitor<List<Node>> {
   }
 
   @Override
+  public List<Node> visitIfStatement(IfStatementContext ctx) {
+    List<Node> result = visitChildren(ctx);
+    addReplacementContext(ctx, IF);
+    return result;
+  }
+
+  @Override
   public List<Node> visitIdmsIfCondition(IdmsIfConditionContext ctx) {
     List<Node> result = visitChildren(ctx);
     addReplacementContext(ctx);
