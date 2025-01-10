@@ -82,6 +82,8 @@ public class CliCFAST  implements Callable<Integer> {
       ProgramNode programNode = result.getData().getRootNode().findFirstProgramNode();
       String json = gson.toJson(builder.build(programNode).getControlFlowAST());
 
+      programNode.getDepthFirstStream().forEach(node -> System.out.println(node));
+
       try (FileWriter writer = new FileWriter(getCFASTFileName(file.toPath()))) {
         writer.write(json);
         writer.flush();
