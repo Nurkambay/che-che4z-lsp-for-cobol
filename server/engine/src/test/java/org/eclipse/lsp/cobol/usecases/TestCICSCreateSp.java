@@ -71,17 +71,25 @@ public class TestCICSCreateSp {
                 "CREATE WEBSERVICE({$varFour}) NOLOG ATTRLEN({$varOne}) ATTRIBUTES({$varFour})",
                 "CREATE SESSIONS({$varFour}) NOLOG ATTRLEN({$varOne}) ATTRIBUTES({$varFour})",
                 "CREATE TERMINAL({$varFour}) NOLOG ATTRLEN({$varOne}) ATTRIBUTES({$varFour})",
-                "CREATE CONNECTION({$varFour}) ATTRLEN({$varOne}) ATTRIBUTES({$varFour}) NOLOG");
+                "CREATE CONNECTION({$varFour}) ATTRLEN({$varOne}) ATTRIBUTES({$varFour}) NOLOG",
+                "CREATE CONNECTION COMPLETE NOHANDLE",
+                "CREATE NOHANDLE TERMINAL DISCARD");
+    };
+    private static Stream<String> getInValidSubOperandOptions() {
+        return Stream.of(
+                "CREATE {TERMINAL|error} ATTRLEN({$varOne}) ATTRIBUTES({$varFour})",
+                "CREATE {CONNECTION|error} ATTRLEN({$varOne}) ATTRIBUTES({$varFour})",
+                "CREATE ATTRIBUTES({$varFour}) {TERMINAL|error}");
     };
 
     private static final String CREATE_INVALID =
-            "CREATE CONNECTION({$varFour})"
+            "CREATE {CONNECTION|errorSubOperand}({$varFour})"
                    + "{ATTRIBUTES|errorInvalidDiscard}(1)"
                    + "{DISCARD|errorInvalidDiscard2}";
     private static final String CREATE_BUNDLE_MISSING_ATTRIBUTES_INVALID =
             "CREATE {_BUNDLE({$varFour}) NOLOG |error_}";
     private static final String CREATE_CONNECTION_MUTUALEX_INVALID =
-            "CREATE CONNECTION({$varFour}) {COMPLETE|error} {DISCARD|error2}";
+            "CREATE CONNECTION {COMPLETE|error} {DISCARD|error2}";
     private static final String CREATE_DB2CONN_MUTUALEX_INVALID =
             "CREATE DB2CONN({$varFour}) ATTRIBUTES({$varFour}) {LOG|error} {NOLOG|error2}";
     private static final String CREATE_DB2ENTRY_DISCARD_INVALID =
@@ -90,16 +98,39 @@ public class TestCICSCreateSp {
             "CREATE NOHANDLE {DB2ENTRY|error}({$varFour}) ATTRIBUTES({$varFour}) {FILE|error2}({$varFour})";
     private static final String CREATE_DB2ENTRY_FILE_CASE_SENSITIVE_INVALID =
             "CREATE NOHANDLE {DB2ENTRY|error}({$varFour}) ATTRIBUTES({$varFour}) {FILE|error2}({$varFour})"
-                    + "{FiLe|error3}({$varFour})";
+                    + "{FiLe|error3|error4}({$varFour})";
+    private static final String CREATE_TERMINAL_SUBOPERAND_INVALID = "CREATE {TERMINAL|error}({$varFour}) DISCARD";
+
     @ParameterizedTest
     @MethodSource("getValidOptions")
     void testCreateSpAllValid(String valid) {
         CICSTestUtils.noErrorTest(valid, "SP");
     }
+    @ParameterizedTest
+    @MethodSource("getInValidSubOperandOptions")
+    void testCreateSubOperandSpInValid(String invalid) {
+        Map<String, Diagnostic> expectedDiagnostic =
+                ImmutableMap.of(
+                        "error",
+                        new Diagnostic(
+                                new Range(),
+                                "Operand value required",
+                                DiagnosticSeverity.Error,
+                                ErrorSource.PARSING.getText())
+                );
+
+        CICSTestUtils.errorTest(invalid, expectedDiagnostic, "SP");
+    }
     @Test
     void testCreateSpInvalid() {
         Map<String, Diagnostic> expectedDiagnostic =
                 ImmutableMap.of(
+                        "errorSubOperand",
+                        new Diagnostic(
+                                new Range(),
+                                "Operand value not allowed",
+                                DiagnosticSeverity.Error,
+                                ErrorSource.PARSING.getText()),
                         "errorInvalidDiscard",
                         new Diagnostic(
                                 new Range(),
@@ -149,6 +180,12 @@ public class TestCICSCreateSp {
     void testCreateDb2ConnSpInvalid() {
         Map<String, Diagnostic> expectedDiagnostic =
                 ImmutableMap.of(
+                        "errorOperand",
+                        new Diagnostic(
+                                new Range(),
+                                "Invalid option or parameter provided: Sub Operand",
+                                DiagnosticSeverity.Error,
+                                ErrorSource.PARSING.getText()),
                         "error",
                         new Diagnostic(
                                 new Range(),
@@ -184,13 +221,21 @@ public class TestCICSCreateSp {
                         "error",
                         new Diagnostic(
                                 new Range(),
-                                "Exactly one option required, options are mutually exclusive: DB2ENTRY or FILE",
+                                "Exactly one option required, options are mutually exclusive: ATOMSERVICE or BUNDLE"
+                                        + " or DB2CONN or DB2ENTRY or DB2TRAN or DOCTEMPLATE or DUMPCODE or ENQMODEL or FILEPIPELINE"
+                                        + " or IPCONN or JOURNALMODEL or JVMSERVER or LIBRARY or LSRPOOL or MAPSET or MQCONN"
+                                        + " or MQMONITOR or PARTITIONSET or PARTNERPROCESSTYPE or PROFILE or PROGRAM or TCPIPSERVICE"
+                                        + " or TDQUEUE or TRANCLASS or TRANSACTION or TSMODEL or TYPETERM or URIMAP or WEBSERVICESESSIONS or TERMINAL or CONNECTION",
                                 DiagnosticSeverity.Error,
                                 ErrorSource.PARSING.getText()),
                         "error2",
                         new Diagnostic(
                                 new Range(),
-                                "Exactly one option required, options are mutually exclusive: DB2ENTRY or FILE",
+                                "Exactly one option required, options are mutually exclusive: ATOMSERVICE or BUNDLE"
+                                        + " or DB2CONN or DB2ENTRY or DB2TRAN or DOCTEMPLATE or DUMPCODE or ENQMODEL or FILEPIPELINE"
+                                        + " or IPCONN or JOURNALMODEL or JVMSERVER or LIBRARY or LSRPOOL or MAPSET or MQCONN"
+                                        + " or MQMONITOR or PARTITIONSET or PARTNERPROCESSTYPE or PROFILE or PROGRAM or TCPIPSERVICE"
+                                        + " or TDQUEUE or TRANCLASS or TRANSACTION or TSMODEL or TYPETERM or URIMAP or WEBSERVICESESSIONS or TERMINAL or CONNECTION",
                                 DiagnosticSeverity.Error,
                                 ErrorSource.PARSING.getText()));
 
@@ -203,13 +248,21 @@ public class TestCICSCreateSp {
                         "error",
                         new Diagnostic(
                                 new Range(),
-                                "Exactly one option required, options are mutually exclusive: DB2ENTRY or FILE",
+                                "Exactly one option required, options are mutually exclusive: ATOMSERVICE or BUNDLE"
+                                        + " or DB2CONN or DB2ENTRY or DB2TRAN or DOCTEMPLATE or DUMPCODE or ENQMODEL or FILEPIPELINE"
+                                        + " or IPCONN or JOURNALMODEL or JVMSERVER or LIBRARY or LSRPOOL or MAPSET or MQCONN"
+                                        + " or MQMONITOR or PARTITIONSET or PARTNERPROCESSTYPE or PROFILE or PROGRAM or TCPIPSERVICE"
+                                        + " or TDQUEUE or TRANCLASS or TRANSACTION or TSMODEL or TYPETERM or URIMAP or WEBSERVICESESSIONS or TERMINAL or CONNECTION",
                                 DiagnosticSeverity.Error,
                                 ErrorSource.PARSING.getText()),
                         "error2",
                         new Diagnostic(
                                 new Range(),
-                                "Exactly one option required, options are mutually exclusive: DB2ENTRY or FILE",
+                                "Exactly one option required, options are mutually exclusive: ATOMSERVICE or BUNDLE"
+                                        + " or DB2CONN or DB2ENTRY or DB2TRAN or DOCTEMPLATE or DUMPCODE or ENQMODEL or FILEPIPELINE"
+                                        + " or IPCONN or JOURNALMODEL or JVMSERVER or LIBRARY or LSRPOOL or MAPSET or MQCONN"
+                                        + " or MQMONITOR or PARTITIONSET or PARTNERPROCESSTYPE or PROFILE or PROGRAM or TCPIPSERVICE"
+                                        + " or TDQUEUE or TRANCLASS or TRANSACTION or TSMODEL or TYPETERM or URIMAP or WEBSERVICESESSIONS or TERMINAL or CONNECTION",
                                 DiagnosticSeverity.Error,
                                 ErrorSource.PARSING.getText()),
                         "error3",
@@ -217,9 +270,34 @@ public class TestCICSCreateSp {
                                 new Range(),
                                 "Excessive options provided for: FiLe",
                                 DiagnosticSeverity.Error,
-                                ErrorSource.PARSING.getText()));
+                                ErrorSource.PARSING.getText()),
+                        "error4",
+                        new Diagnostic(
+                                new Range(),
+                                "Exactly one option required, options are mutually exclusive: ATOMSERVICE or BUNDLE"
+                                        + " or DB2CONN or DB2ENTRY or DB2TRAN or DOCTEMPLATE or DUMPCODE or ENQMODEL or FILEPIPELINE"
+                                        + " or IPCONN or JOURNALMODEL or JVMSERVER or LIBRARY or LSRPOOL or MAPSET or MQCONN"
+                                        + " or MQMONITOR or PARTITIONSET or PARTNERPROCESSTYPE or PROFILE or PROGRAM or TCPIPSERVICE"
+                                        + " or TDQUEUE or TRANCLASS or TRANSACTION or TSMODEL or TYPETERM or URIMAP or WEBSERVICESESSIONS or TERMINAL or CONNECTION",
+                                DiagnosticSeverity.Error,
+                                ErrorSource.PARSING.getText())
+                        );
 
         CICSTestUtils.errorTest(CREATE_DB2ENTRY_FILE_CASE_SENSITIVE_INVALID, expectedDiagnostic, "SP");
+    }
+    @Test
+    void testCreateTerminalSubOperandSpInvalid() {
+        Map<String, Diagnostic> expectedDiagnostic =
+                ImmutableMap.of(
+                        "error",
+                        new Diagnostic(
+                                new Range(),
+                                "Operand value not allowed",
+                                DiagnosticSeverity.Error,
+                                ErrorSource.PARSING.getText())
+                       );
+
+        CICSTestUtils.errorTest(CREATE_TERMINAL_SUBOPERAND_INVALID, expectedDiagnostic, "SP");
     }
 }
 

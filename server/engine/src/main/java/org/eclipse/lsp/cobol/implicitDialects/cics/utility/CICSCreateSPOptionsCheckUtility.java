@@ -16,12 +16,14 @@ package org.eclipse.lsp.cobol.implicitDialects.cics.utility;
 
         import org.antlr.v4.runtime.ParserRuleContext;
 
+        import org.antlr.v4.runtime.tree.TerminalNode;
         import org.eclipse.lsp.cobol.common.dialects.DialectProcessingContext;
         import org.eclipse.lsp.cobol.common.error.ErrorSeverity;
         import org.eclipse.lsp.cobol.common.error.SyntaxError;
         import org.eclipse.lsp.cobol.implicitDialects.cics.CICSLexer;
         import org.eclipse.lsp.cobol.implicitDialects.cics.CICSParser;
 
+        import java.util.Arrays;
         import java.util.HashMap;
         import java.util.List;
         import java.util.Map;
@@ -31,6 +33,9 @@ package org.eclipse.lsp.cobol.implicitDialects.cics.utility;
 /** Checks CICS Create System Command rules for required and invalid options */
 public class CICSCreateSPOptionsCheckUtility extends CICSOptionsCheckBaseUtility {
     public static final int RULE_INDEX = RULE_cics_create;
+    private static final int[] COMMANDS_WITH_DISCARD_COMPLETE_OPTS = {
+            CICSParser.TERMINAL,
+            CICSParser.CONNECTION};
     private static final Map<Integer, ErrorSeverity> DUPLICATE_CHECK_OPTIONS =
             new HashMap<Integer, ErrorSeverity>() {
                 {
@@ -95,8 +100,11 @@ public class CICSCreateSPOptionsCheckUtility extends CICSOptionsCheckBaseUtility
         checkDuplicates(ctx);
     }
     private void checkOpts(CICSParser.Cics_create_optsContext ctx) {
-        checkHasMutuallyExclusiveOptions(ctx.ATOMSERVICE(), ctx.BUNDLE(), ctx.DB2CONN(), ctx.DB2ENTRY(), ctx.DB2TRAN(), ctx.DOCTEMPLATE(), ctx.DUMPCODE(),
-                ctx.ENQMODEL(), ctx.FILE(), ctx.PIPELINE(), ctx.IPCONN(), ctx.JOURNALMODEL(), ctx.JVMSERVER(), ctx.LIBRARY(),
+        checkHasExactlyOneOption("ATOMSERVICE or BUNDLE or DB2CONN or DB2ENTRY or DB2TRAN or DOCTEMPLATE or DUMPCODE or ENQMODEL or FILE"
+                + "PIPELINE or IPCONN or JOURNALMODEL or JVMSERVER or LIBRARY or LSRPOOL or MAPSET or MQCONN or MQMONITOR or PARTITIONSET or PARTNER"
+                + "PROCESSTYPE or PROFILE or PROGRAM or TCPIPSERVICE or TDQUEUE or TRANCLASS or TRANSACTION or TSMODEL or TYPETERM or URIMAP or WEBSERVICE"
+                + "SESSIONS or TERMINAL or CONNECTION", ctx, ctx.ATOMSERVICE(), ctx.BUNDLE(), ctx.DB2CONN(), ctx.DB2ENTRY(), ctx.DB2TRAN(), ctx.DOCTEMPLATE(),
+                ctx.DUMPCODE(), ctx.ENQMODEL(), ctx.FILE(), ctx.PIPELINE(), ctx.IPCONN(), ctx.JOURNALMODEL(), ctx.JVMSERVER(), ctx.LIBRARY(),
                 ctx.LSRPOOL(), ctx.MAPSET(), ctx.MQCONN(), ctx.MQMONITOR(), ctx.PARTITIONSET(), ctx.PARTNER(),
                 ctx.PROCESSTYPE(), ctx.PROFILE(), ctx.PROGRAM(), ctx.TCPIPSERVICE(), ctx.TDQUEUE(), ctx.TRANCLASS(),
                 ctx.TRANSACTION(), ctx.TSMODEL(), ctx.TYPETERM(), ctx.URIMAP(), ctx.WEBSERVICE(), ctx.SESSIONS(),
@@ -109,6 +117,9 @@ public class CICSCreateSPOptionsCheckUtility extends CICSOptionsCheckBaseUtility
                 checkHasIllegalOptions(ctx.LOG(), "LOG");
                 checkHasIllegalOptions(ctx.NOLOG(), "NOLOG");
                 checkHasIllegalOptions(ctx.LOGMESSAGE(), "LOGMESSAGE");
+                checkDataValueCompleteDiscard(ctx);
+            } else {
+                checkRequiredSubOperand(ctx);
             }
         } else {
             checkHasIllegalOptions(ctx.DISCARD(), "DISCARD");
@@ -116,6 +127,33 @@ public class CICSCreateSPOptionsCheckUtility extends CICSOptionsCheckBaseUtility
             checkHasMandatoryOptions(ctx.ATTRIBUTES(), ctx, "ATTRIBUTES");
         }
         checkHasMutuallyExclusiveOptions("LOG or NOLOG or LOGMESSAGE", ctx.LOG(), ctx.NOLOG(), ctx.LOGMESSAGE());
+    }
+
+ private void checkDataValueCompleteDiscard(CICSParser.Cics_create_optsContext ctx) {
+        if (ctx.children == null) return;
+        for (int index = 0; index < ctx.children.size() - 1; index++) {
+            if (!TerminalNode.class.isAssignableFrom(ctx.children.get(index).getClass())
+                || !CICSParser.Cics_data_valueContext.class.isAssignableFrom(ctx.children.get(index + 1).getClass())) continue;
+           int tokenIndex = ((TerminalNode) ctx.children.get(index)).getSymbol().getType();
+            if (Arrays.stream(COMMANDS_WITH_DISCARD_COMPLETE_OPTS).anyMatch(i -> i == tokenIndex)
+        ) {
+                throwException(ErrorSeverity.ERROR, getLocality(ctx.children.get(index)),
+                        "",
+                        "Operand value not allowed");
+            }
+        }
+    }
+    private void checkRequiredSubOperand(CICSParser.Cics_create_optsContext ctx) {
+        if (ctx.children == null) return;
+        for (int index = 0; index < ctx.children.size(); index++) {
+            if (!TerminalNode.class.isAssignableFrom(ctx.children.get(index).getClass())
+                    || (index + 1 < ctx.children.size()) && CICSParser.Cics_data_valueContext.class.isAssignableFrom(ctx.children.get(index + 1).getClass())) continue;
+            int tokenIndex = ((TerminalNode) ctx.children.get(index)).getSymbol().getType();
+            if (Arrays.stream(COMMANDS_WITH_DISCARD_COMPLETE_OPTS).anyMatch(i -> i == tokenIndex)
+            ) {
+                throwException(ErrorSeverity.ERROR, getLocality(ctx.children.get(index)), "", "Operand value required");
+            }
+        }
     }
 }
 
