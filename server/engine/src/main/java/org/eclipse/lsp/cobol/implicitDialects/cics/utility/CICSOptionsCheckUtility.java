@@ -118,6 +118,9 @@ public class CICSOptionsCheckUtility {
         CICSReadNextReadPrevOptionsUtility.RULE_INDEX,
         new CICSReadNextReadPrevOptionsUtility(context, errors));
     optionsMap.put(
+        CICSSignonOptionsCheckUtility.RULE_INDEX,
+        new CICSSignonOptionsCheckUtility(context, errors));
+    optionsMap.put(
         CICSForceOptionsCheckUtility.RULE_INDEX,
         new CICSForceOptionsCheckUtility(context, errors));
     optionsMap.put(
