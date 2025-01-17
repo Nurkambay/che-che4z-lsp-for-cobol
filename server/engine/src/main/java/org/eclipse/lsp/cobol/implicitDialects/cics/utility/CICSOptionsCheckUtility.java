@@ -289,6 +289,9 @@ public class CICSOptionsCheckUtility {
         CICSSoapfaultOptionsCheckUtility.RULE_INDEX,
         new CICSSoapfaultOptionsCheckUtility(context, errors));
     optionsMap.put(
+        CICSResumeOptionsCheckUtility.RULE_INDEX,
+        new CICSResumeOptionsCheckUtility(context, errors));
+    optionsMap.put(
         CICSRouteOptionsCheckUtility.RULE_INDEX,
         new CICSRouteOptionsCheckUtility(context, errors));
     spOptionsMap.put(
