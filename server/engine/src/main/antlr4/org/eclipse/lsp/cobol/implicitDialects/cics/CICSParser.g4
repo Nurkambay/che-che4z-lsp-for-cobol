@@ -413,13 +413,12 @@ cics_getmain64_body: (SET cics_ref | FLENGTH cics_data_value | LOCATION cics_cvd
 
 
 /** GETNEXT ACTIVITY / CONTAINER / EVENT / PROCESS */
-cics_getnext: GETNEXT (cics_getnext_activity | cics_getnext_container | cics_getnext_event | cics_getnext_process);
-cics_getnext_activity: (ACTIVITY cics_data_area | BROWSETOKEN cics_data_value ACTIVITYID cics_data_area |
-                       LEVEL cics_data_area | cics_handle_response)+;
-cics_getnext_event: (EVENT cics_data_area | BROWSETOKEN cics_data_value | COMPOSITE cics_data_area | EVENTTYPE cics_cvda |
-                    FIRESTATUS cics_cvda | PREDICATE cics_cvda | TIMER cics_data_area | cics_handle_response)+;
-cics_getnext_process: (PROCESS cics_data_area | BROWSETOKEN cics_data_value | ACTIVITYID cics_data_area | cics_handle_response)+;
+cics_getnext: GETNEXT (cics_getnext_activity | cics_getnext_container | cics_getnext_event | cics_getnext_process | cics_getnext_timer);
+cics_getnext_activity: (BROWSETOKEN cics_data_value | (ACTIVITY | ACTIVITYID | LEVEL) cics_data_area | cics_handle_response)+;
 cics_getnext_container: (CONTAINER cics_data_area | BROWSETOKEN cics_data_value | cics_handle_response)+;
+cics_getnext_event: (BROWSETOKEN cics_data_value | (EVENT | COMPOSITE | TIMER) cics_data_area | (EVENTTYPE | FIRESTATUS | PREDICATE) cics_cvda | cics_handle_response)+;
+cics_getnext_process: (BROWSETOKEN cics_data_value | (PROCESS | ACTIVITYID) cics_data_area | cics_handle_response)+;
+cics_getnext_timer: ((TIMER | ACTIVITYID) cics_data_value | (EVENT | ABSTIME | BROWSETOKEN) cics_data_area | STATUS cics_cvda | cics_handle_response)+;
 
 /** HANDLE CONDITION / HANDLE AID / HANDLE ABEND: */
 cics_handle: HANDLE (cics_handle_abend | cics_handle_aid | cics_handle_condition);

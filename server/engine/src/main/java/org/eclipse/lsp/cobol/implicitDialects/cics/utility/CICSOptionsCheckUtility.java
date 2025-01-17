@@ -211,6 +211,9 @@ public class CICSOptionsCheckUtility {
         CICSVerifyOptionsCheckUtility.RULE_INDEX,
         new CICSVerifyOptionsCheckUtility(context, errors));
     optionsMap.put(
+        CICSGetnextOptionsCheckUtility.RULE_INDEX,
+        new CICSGetnextOptionsCheckUtility(context, errors));
+    optionsMap.put(
         CICSSpoolOpenOptionsCheckUtility.RULE_INDEX,
         new CICSSpoolOpenOptionsCheckUtility(context, errors));
     optionsMap.put(
