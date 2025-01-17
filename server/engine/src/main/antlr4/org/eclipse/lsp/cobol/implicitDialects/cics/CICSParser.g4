@@ -753,8 +753,8 @@ cics_rewind: REWIND cics_rewind_opts;
 cics_rewind_opts:(COUNTER cics_name | DCOUNTER cics_name | NOSUSPEND | POOL cics_name | INCREMENT cics_data_value | cics_handle_response)+;
 
 /** REWRITE: */
-cics_rewrite: REWRITE cics_file_name (TOKEN cics_data_area | FROM cics_data_area | SYSID cics_data_area
-              LENGTH cics_data_value | LENGTH cics_data_value | NOSUSPEND | cics_handle_response)+;
+cics_rewrite: REWRITE cics_rewrite_body;
+cics_rewrite_body: (NOSUSPEND | (FILE | DATASET | SYSID) cics_name | LENGTH cics_data_value | (TOKEN | FROM) cics_data_area | cics_handle_response)+;
 
 /** ROUTE */
 cics_route: ROUTE cics_route_body?;
