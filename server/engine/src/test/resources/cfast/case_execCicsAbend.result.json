@@ -1,0 +1,36 @@
+[
+  {
+    "name": "CBACT01C",
+    "type": "program",
+    "location": {
+      "uri": "fake/path",
+      "start": {
+        "line": 15.0,
+        "character": 9.0
+      },
+      "end": {
+        "line": 17.0,
+        "character": 21.0
+      }
+    },
+    "children": [
+      {
+        "abcode": "\"12\"",
+        "cancel": true,
+        "nodump": false,
+        "type": "execcicsabend",
+        "location": {
+          "uri": "fake/path",
+          "start": {
+            "line": 16.0,
+            "character": 22.0
+          },
+          "end": {
+            "line": 16.0,
+            "character": 47.0
+          }
+        }
+      }
+    ]
+  }
+]

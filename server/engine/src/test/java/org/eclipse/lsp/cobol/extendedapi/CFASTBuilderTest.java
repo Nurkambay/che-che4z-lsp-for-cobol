@@ -65,6 +65,7 @@ class CFASTBuilderTest {
     CFASTBuilder builder = new CFASTBuilderImpl(documentModelService);
     MessageJsonHandler handler = new MessageJsonHandler(ImmutableMap.of());
     Gson gson = handler.getGson();
+    gson = gson.newBuilder().setPrettyPrinting().create();
 
     Assertions.assertEquals(
         gson.toJson(gson.fromJson(jsonTree, List.class)),

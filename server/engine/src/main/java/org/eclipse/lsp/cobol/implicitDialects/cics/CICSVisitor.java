@@ -51,11 +51,11 @@ import org.eclipse.lsp.cobol.common.model.Locality;
 import org.eclipse.lsp.cobol.common.model.tree.CodeBlockUsageNode;
 import org.eclipse.lsp.cobol.common.model.tree.CompilerDirectiveNode;
 import org.eclipse.lsp.cobol.common.model.tree.Node;
-import org.eclipse.lsp.cobol.common.model.tree.StopNode;
 import org.eclipse.lsp.cobol.common.model.tree.variable.QualifiedReferenceNode;
 import org.eclipse.lsp.cobol.common.model.tree.variable.VariableUsageNode;
 import org.eclipse.lsp.cobol.common.utils.ThreadInterruptionUtil;
 import org.eclipse.lsp.cobol.core.visitor.VisitorHelper;
+import org.eclipse.lsp.cobol.implicitDialects.cics.nodes.ExecCicsAbendNode;
 import org.eclipse.lsp.cobol.implicitDialects.cics.nodes.ExecCicsHandleNode;
 import org.eclipse.lsp.cobol.implicitDialects.cics.nodes.ExecCicsNode;
 import org.eclipse.lsp.cobol.implicitDialects.cics.nodes.ExecCicsReturnNode;
@@ -90,6 +90,68 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
     }
 
     @Override
+    public List<Node> visitCics_handle_abend(CICSParser.Cics_handle_abendContext ctx) {
+        boolean isProgram =
+            Optional.ofNullable(ctx)
+                .map(CICSParser.Cics_handle_abendContext::PROGRAM)
+                .filter(s -> s.size() > 0)
+                .isPresent();
+
+        boolean isLabel =
+            Optional.ofNullable(ctx)
+                .map(CICSParser.Cics_handle_abendContext::LABEL)
+                .filter(s -> s.size() > 0)
+                .isPresent();
+
+        boolean isReset =
+            Optional.ofNullable(ctx)
+                .map(CICSParser.Cics_handle_abendContext::RESET)
+                .filter(s -> s.size() > 0)
+                .isPresent();
+
+        ExecCicsHandleNode.HandleAbendType type;
+        if (isProgram) {
+            type = ExecCicsHandleNode.HandleAbendType.PROGRAM;
+        } else if (isLabel) {
+            type = ExecCicsHandleNode.HandleAbendType.LABEL;
+        } else if (isReset) {
+            type = ExecCicsHandleNode.HandleAbendType.RESET;
+        } else {
+            type = ExecCicsHandleNode.HandleAbendType.CANCEL;
+        }
+
+        Node node = new ExecCicsHandleNode(getOriginalLocality(ctx.getParent().getParent().getParent()), type);
+        visitChildren(ctx).forEach(node::addChild);
+        return ImmutableList.of(node);
+    }
+
+    @Override
+    public List<Node> visitCics_abend(CICSParser.Cics_abendContext ctx) {
+        boolean isCancel = Optional.ofNullable(ctx.cics_abend_cancel()).map(l -> l.size()).orElse(0) > 0;
+        boolean isNodump = Optional.ofNullable(ctx.cics_abend_nodump()).map(l -> l.size()).orElse(0) > 0;
+        String[] abcodeArray = Optional.ofNullable(ctx.cics_abend_abcode())
+            .filter(l -> l.size() > 0)
+            .map(l -> l.get(0))
+            .map(a -> a.cics_name())
+            .map(a -> a.name())
+            .map(a -> a.variableNameUsage())
+            .orElse(ImmutableList.of())
+            .stream()
+            .map(a -> a.getText())
+            .toArray(String[]::new);
+
+        String abcode = String.join(",", abcodeArray);
+        return addTreeNode(ctx, locality -> new ExecCicsAbendNode(locality, abcode, isCancel, isNodump));
+    }
+
+    @Override
+    public List<Node> visitCics_return(CICSParser.Cics_returnContext ctx) {
+        Node node = new ExecCicsReturnNode(getOriginalLocality(ctx.getParent().getParent()));
+        visitChildren(ctx).forEach(node::addChild);
+        return ImmutableList.of(node);
+    }
+
+    @Override
     public List<Node> visitCicsExecBlock(CICSParser.CicsExecBlockContext ctx) {
         areaBWarning(ctx);
         changeContextToDialectStatement(ctx);
@@ -103,53 +165,11 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
             errors.add(error);
         }
 
-        boolean isReturn =
-                (ctx.allCicsRule() != null
-                        && ctx.allCicsRule().size() > 0
-                        && ctx.allCicsRule().get(0).cics_return() != null);
-        boolean isHandle =
-                (ctx.allCicsRule() != null
-                        && ctx.allCicsRule().size() > 0
-                        && ctx.allCicsRule().get(0).cics_handle() != null);
-
-        if (isReturn) {
-            return addTreeNode(ctx, ExecCicsReturnNode::new);
-        } else if (isHandle) {
-            boolean isProgram =
-                    Optional.ofNullable(ctx.allCicsRule().get(0).cics_handle())
-                            .map(CICSParser.Cics_handleContext::cics_handle_abend)
-                            .map(CICSParser.Cics_handle_abendContext::PROGRAM)
-                            .filter(s -> s.size() > 0)
-                            .isPresent();
-
-            boolean isLabel =
-                    Optional.ofNullable(ctx.allCicsRule().get(0).cics_handle())
-                            .map(CICSParser.Cics_handleContext::cics_handle_abend)
-                            .map(CICSParser.Cics_handle_abendContext::LABEL)
-                            .filter(s -> s.size() > 0)
-                            .isPresent();
-
-            boolean isReset =
-                    Optional.ofNullable(ctx.allCicsRule().get(0).cics_handle())
-                            .map(CICSParser.Cics_handleContext::cics_handle_abend)
-                            .map(CICSParser.Cics_handle_abendContext::RESET)
-                            .filter(s -> s.size() > 0)
-                            .isPresent();
-
-            ExecCicsHandleNode.HandleAbendType type;
-            if (isProgram) {
-                type = ExecCicsHandleNode.HandleAbendType.PROGRAM;
-            } else if (isLabel) {
-                type = ExecCicsHandleNode.HandleAbendType.LABEL;
-            } else if (isReset) {
-                type = ExecCicsHandleNode.HandleAbendType.RESET;
-            } else {
-                type = ExecCicsHandleNode.HandleAbendType.CANCEL;
-            }
-
-            return addTreeNode(ctx, (location) -> new ExecCicsHandleNode(location, type));
+        List<Node> nodes = visitChildren(ctx);
+        if (nodes.isEmpty()) {
+            return addTreeNode(ctx, ExecCicsNode::new);
         }
-        return addTreeNode(ctx, ExecCicsNode::new);
+        return nodes;
     }
 
     @Override
@@ -258,11 +278,6 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
     @Override
     protected List<Node> aggregateResult(List<Node> aggregate, List<Node> nextResult) {
         return Stream.concat(aggregate.stream(), nextResult.stream()).collect(toList());
-    }
-
-    @Override
-    public List<Node> visitCics_return(CICSParser.Cics_returnContext ctx) {
-        return addTreeNode(ctx, StopNode::new);
     }
 
     private List<Node> addTreeNode(ParserRuleContext ctx, Function<Locality, Node> nodeConstructor) {

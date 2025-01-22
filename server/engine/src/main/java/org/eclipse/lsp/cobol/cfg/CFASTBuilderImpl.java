@@ -22,6 +22,7 @@ import org.eclipse.lsp.cobol.common.model.tree.statements.StatementNode;
 import org.eclipse.lsp.cobol.common.model.tree.variable.VariableUsageNode;
 import org.eclipse.lsp.cobol.common.model.variables.DivisionType;
 import org.eclipse.lsp.cobol.core.model.extendedapi.*;
+import org.eclipse.lsp.cobol.implicitDialects.cics.nodes.ExecCicsAbendNode;
 import org.eclipse.lsp.cobol.implicitDialects.cics.nodes.ExecCicsHandleNode;
 import org.eclipse.lsp.cobol.implicitDialects.cics.nodes.ExecCicsNode;
 import org.eclipse.lsp.cobol.implicitDialects.cics.nodes.ExecCicsReturnNode;
@@ -133,6 +134,9 @@ public class CFASTBuilderImpl implements CFASTBuilder {
       addChild(parent, new CFASTNode(CFASTNodeType.EXIT.getValue(), convertLocation(node)));
     } else if (node instanceof GoBackNode) {
       addChild(parent, new CFASTNode(CFASTNodeType.GOBACK.getValue(), convertLocation(node)));
+    } else if (node instanceof ExecCicsAbendNode) {
+      ExecCicsAbendNode abendNode = (ExecCicsAbendNode) node;
+      addChild(parent, new Abend(convertLocation(node), abendNode.getAbcode(), abendNode.isCancel(), abendNode.isNodump()));
     } else if (node instanceof ExecCicsNode) {
       addChild(parent, new CFASTNode(CFASTNodeType.EXEC_CICS.getValue(), convertLocation(node)));
       node.getChildren().forEach(child -> traverse(parent, child));

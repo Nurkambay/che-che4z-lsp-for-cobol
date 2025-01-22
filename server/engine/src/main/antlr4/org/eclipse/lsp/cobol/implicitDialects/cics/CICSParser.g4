@@ -150,10 +150,12 @@ cics_into: (INTO cics_data_area | SET cics_ref);
 cics_converse_tolength: (TOLENGTH | TOFLENGTH) cics_data_area;
 cics_maxlength: ((MAXLENGTH | MAXFLENGTH) cics_data_value);
 
-
 /** ABEND: */
-cics_abend: ABEND cics_abend_opts;
-cics_abend_opts:(ABCODE cics_name | CANCEL | NODUMP| cics_handle_response)*;
+cics_abend: ABEND (cics_abend_abcode | cics_abend_cancel | cics_abend_nodump | cics_handle_response)*;
+cics_abend_abcode: ABCODE cics_name;
+cics_abend_cancel: CANCEL;
+cics_abend_nodump: NODUMP;
+
 /** ACQUIRE */
 cics_acquire:ACQUIRE (cics_acquire_process | cics_acquire_activityId ) ;
 
