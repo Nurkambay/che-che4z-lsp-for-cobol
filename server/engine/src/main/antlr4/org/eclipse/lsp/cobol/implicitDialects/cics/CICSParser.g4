@@ -38,7 +38,7 @@ allExciRules: cics_exci_link | cics_exci_delete | cics_exci_delete_container | c
               cics_exci_get_container | cics_exci_get_next_container | cics_exci_move_container |
               cics_exci_put_container | cics_exci_query_channel | cics_exci_startbrowse_container ;
 
-allSPRules: cics_discard | cics_extract_system_programming | cics_inquire_system_programming | cics_create;
+allSPRules: cics_disable | cics_discard | cics_enable | cics_extract_system_programming | cics_inquire_system_programming | cics_create;
 
 // compiler options
 compilerOpts
@@ -315,6 +315,11 @@ cics_queue_qname: (QUEUE | QNAME) cics_name;
 cics_deq: DEQ (cics_deq_cmds | cics_handle_response);
 cics_deq_cmds : (RESOURCE cics_data_area | LENGTH cics_data_value | MAXLIFETIME cics_cvda | TASK | UOW)+;
 
+/** DISABLE PROGRAM */
+cics_disable: DISABLE cics_disable_program;
+cics_disable_program: ((PROGRAM | ENTRYNAME | EXIT) cics_data_value | EXITALL | FORMATEDF | PURGEABLE |
+              SHUTDOWN | SPI | STOP | TASKSTART | cics_handle_response)+;
+
 /** DISCARD System Commands **/
 cics_discard: DISCARD cics_discard_body;
 cics_discard_body: cics_handle_response* ((ATOMSERVICE | AUTINSTMODEL | BUNDLE | CONNECTION | DB2ENTRY | DB2TRAN | DOCTEMPLATE |
@@ -343,6 +348,13 @@ cics_dump: DUMP TRANSACTION (DUMPCODE cics_name | cics_dump_transaction_from  | 
 cics_dump_transaction_from: (FROM cics_data_area | cics_length_flength | cics_handle_response)+;
 cics_dump_code_opts: (COMPLETE | TRT | TASK | STORAGE | PROGRAM | TERMINAL | TABLES | FCT | PCT | PPT | SIT | TCT | DUMPID cics_data_area | cics_handle_response)+;
 cics_dump_transaction_segmentlist: ((SEGMENTLIST | LENGTHLIST | NUMSEGMENTS) cics_data_area | cics_handle_response)+;
+
+/** ENABLE PROGRAM */
+cics_enable: ENABLE cics_enable_program;
+cics_enable_program: ((PROGRAM | ENTRYNAME | EXIT | GALENGTH | GAENTRYNAME | TALENGTH) cics_data_value |
+                     ENTRY cics_ref | FORMATEDF | GALOCATION cics_cvda | GAEXECUTABLE | INDOUBTWAIT | LINKEDITMODE |
+                     QUASIRENT | THREADSAFE | OPENAPI | REQUIRED | PURGEABLE | SHUTDOWN | SPI | START | TAEXECUTABLE |
+                     TASKSTART | cics_handle_response)+;
 
 /** ENDBR / ENDBROWSE */
 cics_endbr: ENDBR cics_endbr_opts;
@@ -1520,6 +1532,7 @@ ABCODE
   | DIGEST
   | DIGESTTYPE
   | DIRMGR
+  | DISABLE
   | DISABLED
   | DISABLEDACT
   | DISCARD
@@ -1597,6 +1610,7 @@ ABCODE
   | EM
   | EMITMODE
   | EMPTYSTATUS
+  | ENABLE
   | ENABLEDCOUNT
   | ENABLESTATUS
   | ENCRYPTKEY
@@ -1668,6 +1682,7 @@ ABCODE
   | EXECUTABLE
   | EXECUTIONSET
   | EXIT
+  | EXITALL
   | EXITPGM
   | EXITTRACING
   | EXPECT
@@ -1713,6 +1728,7 @@ ABCODE
   | FMHSTATUS
   | FORCE
   | FORCEQR
+  | FORMATEDF
   | FORMATEDFST
   | FORMATTIME
   | FORMFEED
@@ -1740,7 +1756,9 @@ ABCODE
   | FWDRECOVLSN
   | FWDRECSTATUS
   | GAENTRYNAME
+  | GAEXECUTABLE
   | GALENGTH
+  | GALOCATION
   | GARBAGEINT
   | GASET
   | GAUSECOUNT
@@ -1949,6 +1967,7 @@ ABCODE
   | LINKABEND
   | LINKAGE
   | LINKAUTH
+  | LINKEDITMODE
   | LINKLEVEL
   | LINKSYSNET
   | LINKSYSTEM
@@ -2184,6 +2203,7 @@ ABCODE
   | ODUSERID
   | OIDCARD
   | OPCLASS
+  | OPENAPI
   | OPENERR
   | OPENSTATUS
   | OPERATION
@@ -2380,6 +2400,7 @@ ABCODE
   | QNAME
   | QUALIFIER
   | QUALLEN
+  | QUASIRENT
   | QUERY
   | QUERYPARM
   | QUERYST
@@ -2446,6 +2467,7 @@ ABCODE
   | REQTYPE
   | REQUESTSTRM
   | REQUESTTYPE
+  | REQUIRED
   | RES
   | RESCLASS
   | RESCOUNT
@@ -2604,6 +2626,7 @@ ABCODE
   | SOSIST
   | SOSSTATUS
   | SPECIFTCPS
+  | SPI
   | SPIST
   | SPOLBUSY
   | SPOLERR
@@ -2641,6 +2664,7 @@ ABCODE
   | STATUSTEXT
   | STDERR
   | STDOUT
+  | STOP
   | STORAGE
   | STORAGECLEAR
   | STOREPROTECT
@@ -2694,6 +2718,7 @@ ABCODE
   | TABLENAME
   | TABLES
   | TABLESIZE
+  | TAEXECUTABLE
   | TALENGTH
   | TARGETCOUNT
   | TASK
@@ -2703,6 +2728,7 @@ ABCODE
   | TASKIDERR
   | TASKPRIORITY
   | TASKS
+  | TASKSTART
   | TASKSTARTST
   | TASKSUBPOOL
   | TC
@@ -2744,6 +2770,7 @@ ABCODE
   | THREADERROR
   | THREADLIMIT
   | THREADS
+  | THREADSAFE
   | THREADWAIT
   | THRESHOLD
   | TI
