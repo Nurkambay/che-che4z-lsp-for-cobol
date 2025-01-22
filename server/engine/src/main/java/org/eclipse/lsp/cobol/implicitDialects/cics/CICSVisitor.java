@@ -127,8 +127,8 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
 
     @Override
     public List<Node> visitCics_abend(CICSParser.Cics_abendContext ctx) {
-        boolean isCancel = Optional.ofNullable(ctx.cics_abend_cancel()).map(l -> l.size()).orElse(0) > 0;
-        boolean isNodump = Optional.ofNullable(ctx.cics_abend_nodump()).map(l -> l.size()).orElse(0) > 0;
+        boolean isCancel = !ctx.cics_abend_cancel().isEmpty();
+        boolean isNodump = !ctx.cics_abend_nodump().isEmpty();
         String[] abcodeArray = Optional.ofNullable(ctx.cics_abend_abcode())
             .filter(l -> l.size() > 0)
             .map(l -> l.get(0))
