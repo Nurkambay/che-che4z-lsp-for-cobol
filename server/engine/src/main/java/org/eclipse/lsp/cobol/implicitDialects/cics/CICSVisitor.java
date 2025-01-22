@@ -91,30 +91,12 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
 
     @Override
     public List<Node> visitCics_handle_abend(CICSParser.Cics_handle_abendContext ctx) {
-        boolean isProgram =
-            Optional.ofNullable(ctx)
-                .map(CICSParser.Cics_handle_abendContext::PROGRAM)
-                .filter(s -> s.size() > 0)
-                .isPresent();
-
-        boolean isLabel =
-            Optional.ofNullable(ctx)
-                .map(CICSParser.Cics_handle_abendContext::LABEL)
-                .filter(s -> s.size() > 0)
-                .isPresent();
-
-        boolean isReset =
-            Optional.ofNullable(ctx)
-                .map(CICSParser.Cics_handle_abendContext::RESET)
-                .filter(s -> s.size() > 0)
-                .isPresent();
-
         ExecCicsHandleNode.HandleAbendType type;
-        if (isProgram) {
+        if (!ctx.PROGRAM().isEmpty()) {
             type = ExecCicsHandleNode.HandleAbendType.PROGRAM;
-        } else if (isLabel) {
+        } else if (!ctx.LABEL().isEmpty()) {
             type = ExecCicsHandleNode.HandleAbendType.LABEL;
-        } else if (isReset) {
+        } else if (!ctx.RESET().isEmpty()) {
             type = ExecCicsHandleNode.HandleAbendType.RESET;
         } else {
             type = ExecCicsHandleNode.HandleAbendType.CANCEL;
@@ -129,19 +111,9 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
     public List<Node> visitCics_abend(CICSParser.Cics_abendContext ctx) {
         boolean isCancel = !ctx.cics_abend_cancel().isEmpty();
         boolean isNodump = !ctx.cics_abend_nodump().isEmpty();
-        String[] abcodeArray = Optional.ofNullable(ctx.cics_abend_abcode())
-            .filter(l -> l.size() > 0)
-            .map(l -> l.get(0))
-            .map(a -> a.cics_name())
-            .map(a -> a.name())
-            .map(a -> a.variableNameUsage())
-            .orElse(ImmutableList.of())
-            .stream()
-            .map(a -> a.getText())
-            .toArray(String[]::new);
+        boolean isAbcode = !ctx.cics_abend_abcode().isEmpty();
 
-        String abcode = String.join(",", abcodeArray);
-        return addTreeNode(ctx, locality -> new ExecCicsAbendNode(locality, abcode, isCancel, isNodump));
+        return addTreeNode(ctx, locality -> new ExecCicsAbendNode(locality, isAbcode, isCancel, isNodump));
     }
 
     @Override

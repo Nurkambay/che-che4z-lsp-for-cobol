@@ -29,7 +29,7 @@ import org.eclipse.lsp.cobol.implicitDialects.cics.CICSDialect;
 public class ExecCicsAbendNode extends Node {
 
   @Getter
-  private final String abcode;
+  private final boolean abcode;
 
   @Getter
   private final boolean cancel;
@@ -37,7 +37,7 @@ public class ExecCicsAbendNode extends Node {
   @Getter
   private final boolean nodump;
 
-  public ExecCicsAbendNode(Locality location, String abcode, boolean cancel, boolean nodump) {
+  public ExecCicsAbendNode(Locality location, boolean abcode, boolean cancel, boolean nodump) {
     super(location, NodeType.STATEMENT, CICSDialect.DIALECT_NAME);
     this.abcode = abcode;
     this.cancel = cancel;

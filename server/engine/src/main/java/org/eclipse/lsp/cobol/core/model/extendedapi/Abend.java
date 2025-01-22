@@ -23,11 +23,11 @@ import lombok.ToString;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class Abend extends CFASTNode {
-  private final String abcode;
+  private final boolean abcode;
   private final boolean cancel;
   private final boolean nodump;
 
-  public Abend(Location location, String abcode, boolean cancel, boolean nodump) {
+  public Abend(Location location, boolean abcode, boolean cancel, boolean nodump) {
     super(CFASTNodeType.EXEC_CICS_ABEND.getValue(), location);
     this.abcode = abcode;
     this.cancel = cancel;

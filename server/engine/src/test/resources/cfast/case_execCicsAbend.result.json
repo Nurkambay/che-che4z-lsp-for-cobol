@@ -15,7 +15,7 @@
     },
     "children": [
       {
-        "abcode": "\"12\"",
+        "abcode": true,
         "cancel": true,
         "nodump": false,
         "type": "execcicsabend",
