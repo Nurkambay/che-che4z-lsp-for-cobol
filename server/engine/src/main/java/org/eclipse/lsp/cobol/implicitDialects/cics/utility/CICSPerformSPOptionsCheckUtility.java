@@ -22,6 +22,7 @@ package org.eclipse.lsp.cobol.implicitDialects.cics.utility;
         import org.eclipse.lsp.cobol.common.error.SyntaxError;
         import org.eclipse.lsp.cobol.implicitDialects.cics.CICSLexer;
         import org.eclipse.lsp.cobol.implicitDialects.cics.CICSParser;
+        import org.antlr.v4.runtime.tree.ParseTree;
 
         import java.util.*;
 
@@ -300,6 +301,7 @@ public class CICSPerformSPOptionsCheckUtility extends CICSOptionsCheckBaseUtilit
         checkPrerequisiteIsMet(ctx.ALL(), ctx.RESETNOW(), ctx, "RESETNOW without ALL");
         checkHasMutuallyExclusiveOptions("JOURNALNAME or JOURNALNUM", ctx.JOURNALNAME(), ctx.JOURNALNUM());
         checkHasMutuallyExclusiveOptions("TRANCLASS or TCLASS", ctx.TRANCLASS(), ctx.TCLASS());
+        checkAll(ctx);
     }
     private void checkDumpDuplicates(List<TerminalNode> rules, ErrorSeverity severity) {
         if (rules.size() <= 1) return;
@@ -310,6 +312,27 @@ public class CICSPerformSPOptionsCheckUtility extends CICSOptionsCheckBaseUtilit
                                 "Excessive options provided for: ",
                                 "DUMP");
                 });
+    }
+    private void checkAll(CICSParser.Cics_perform_statisticsContext ctx) {
+        if (ctx.children == null || ctx.children.isEmpty()) return;
+        boolean isAll = false;
+        boolean isResource = false;
+        for (ParseTree child : ctx.children) {
+            if (!TerminalNode.class.isAssignableFrom(child.getClass())) continue;
+            int token = ((TerminalNode) child).getSymbol().getType();
+            if (token == CICSLexer.ALL) isAll = true;
+            else if (token != CICSLexer.STATISTICS && token != CICSLexer.RECORD && token != CICSLexer.RESETNOW)
+                isResource = true;
+
+            if (isAll && isResource) break;
+        }
+        if (isAll && isResource) {
+            throwException(
+                    ErrorSeverity.ERROR,
+                    getLocality(ctx),
+                    "Option ALL cannot be combined with individual resource types",
+                    "");
+        }
     }
 }
 
