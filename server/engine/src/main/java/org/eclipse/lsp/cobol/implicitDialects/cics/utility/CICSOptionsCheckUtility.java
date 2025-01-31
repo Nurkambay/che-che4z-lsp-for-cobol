@@ -181,6 +181,9 @@ public class CICSOptionsCheckUtility {
         CICSWSAEPRUtility.RULE_INDEX,
         new CICSWSAEPRUtility(context, errors));
     optionsMap.put(
+        CICSSysSetOptionsCheckUtility.RULE_INDEX,
+        new CICSSysSetOptionsCheckUtility(context, errors));
+    optionsMap.put(
         CICSWaitCicsOptionsUtility.RULE_INDEX,
         new CICSWaitCicsOptionsUtility(context, errors));
     optionsMap.put(
