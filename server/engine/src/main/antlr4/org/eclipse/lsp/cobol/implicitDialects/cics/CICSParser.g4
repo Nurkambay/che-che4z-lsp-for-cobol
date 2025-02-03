@@ -1007,15 +1007,10 @@ cics_startbr: STARTBR cics_startbr_options;
 cics_startbr_options: ((FILE | DATASET) cics_name | (RIDFLD | SYSID) cics_data_area | (KEYLENGTH | REQID) cics_data_value | GENERIC |
               DEBKEY | DEBREC | RBA | RRN | XRBA | GTEQ | EQUAL | cics_handle_response)+;
 
-/** STARTBROWSE ACTIVITY / CONTAINER / EVENT / PROCESS */
-cics_startbrowse: STARTBROWSE (cics_startbrowse_activity | cics_startbrowse_container | cics_startbrowse_event |
-                  cics_startbrowse_process);
-cics_startbrowse_activity: ACTIVITY (ACTIVITYID cics_data_value | PROCESS cics_data_value PROCESSTYPE cics_data_value |
-                           BROWSETOKEN cics_data_area | cics_handle_response)+;
-cics_startbrowse_container: CONTAINER (ACTIVITYID cics_data_value | PROCESS cics_data_value PROCESSTYPE cics_data_value |
-                            CHANNEL cics_data_value | BROWSETOKEN cics_data_area | cics_handle_response)+;
-cics_startbrowse_event: EVENT (BROWSETOKEN cics_data_area | ACTIVITYID cics_data_value | cics_handle_response)+;
-cics_startbrowse_process: PROCESS (PROCESSTYPE cics_data_value | BROWSETOKEN cics_data_area | cics_handle_response)+;
+/** STARTBROWSE ACTIVITY / CONTAINER / EVENT / PROCESS / TIMER */
+cics_startbrowse: STARTBROWSE (cics_startbrowse_body);
+cics_startbrowse_body: ((ACTIVITY | CONTAINER | EVENT | PROCESS) | (ACTIVITYID | PROCESSTYPE | CHANNEL | TIMER) cics_data_value | cics_startbrowse_processWithValue_subrule | BROWSETOKEN cics_data_area | cics_handle_response)+;
+cics_startbrowse_processWithValue_subrule: PROCESS cics_data_value;
 
 /** SUSPEND (both) */
 cics_suspend: SUSPEND cics_suspend_body;
