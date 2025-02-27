@@ -316,6 +316,30 @@ class TestSqlAllCreateStatements {
           + "               COPY YES;\n"
           + "           END-EXEC.";
 
+  public static final String CREATE_INDEX5 =
+      TEXT
+          + "           create index inxnm on  tabnam (col1 ASC) \n"
+          + "           cluster\n"
+          + "           partition by \n"
+          + "           (partition 2 ending (MAXVALUE) inclusive dssize 3G)\n"
+          + "           not padded\n"
+          + "           END-EXEC.";;
+
+  public static final String CREATE_INDEX6 =
+      TEXT
+          + "           CREATE INDEX idx_customer ON customers(info)\n"
+          + "                GENERATE KEY USING XMLPATTERN\n"
+          + "           \"/cust:customer/cust:name\" AS SQL VARCHAR(50)\n"
+          + "            END-EXEC.";
+
+  public static final String CREATE_INDEX7 =
+      TEXT
+          + "           CREATE INDEX CSTPHNX2 ON CUST(XMLCUST)\n"
+          + "           GENERATE KEY USING XMLPATTERN\n"
+          + "           \"declare namespace s='http://example.com/ns';\n"
+          + "      -    \"/s:customer/s:phone/@s:type\"\n"
+          + "           AS SQL VARCHAR(12)\n"
+          + "            END-EXEC.";
   // CREATE LOB TABLESPACE
   private static final String CREATE_LOB_TABLESPACE =
       TEXT
@@ -1019,6 +1043,28 @@ class TestSqlAllCreateStatements {
           + "              WHERE DATE BETWEEN '03/01/2000' and '03/31/2000';  \n"
           + "           END-EXEC.";
 
+  public static final String CREATE_VIEW3 =
+      TEXT
+          + "           create VIEW top_publishers AS\n"
+          + "           WITH publisher_ratings (col) AS (\n"
+          + "           SELECT \n"
+          + "                       p.name AS publisher_name,\n"
+          + "                       AVG(b.rating) AS avg_rating\n"
+          + "           FROM \n"
+          + "               publishers p\n"
+          + "               INNER JOIN books b ON p.publisher_id = b.publisher_id\n"
+          + "           GROUP BY \n"
+          + "                       p.name\n"
+          + "           )\n"
+          + "           SELECT \n"
+          + "           publisher_name,\n"
+          + "           avg_rating\n"
+          + "           FROM \n"
+          + "           publisher_ratings\n"
+          + "           WHERE \n"
+          + "           avg_rating = (SELECT MAX(avg_rating) FROM publisher_ratings)\n"
+          + "           END-EXEC.";
+
   private static final String CREATE_TABLE1 =
       TEXT + "            create table all (all integer, avg integer); \n" + "           END-EXEC.";
 
@@ -1046,6 +1092,9 @@ class TestSqlAllCreateStatements {
         CREATE_INDEX2,
         CREATE_INDEX3,
         CREATE_INDEX4,
+        CREATE_INDEX5,
+        CREATE_INDEX6,
+        CREATE_INDEX7,
         CREATE_LOB_TABLESPACE,
         CREATE_MASK,
         CREATE_MASK2,
@@ -1098,6 +1147,7 @@ class TestSqlAllCreateStatements {
         CREATE_VARIABLE2,
         CREATE_VIEW,
         CREATE_VIEW2,
+        CREATE_VIEW3,
         CREATE_TABLE1);
   }
 
