@@ -105,6 +105,7 @@ export class ControlFlowAnalysisService implements AnalysisServiceDelegate {
   private tasks: Map<string, AnalysisTask>;
   private callbacks: Map<string, ControlFlowAnalysisCallback>;
   private diagnosticService: DiagnosticService;
+  private static instance: ControlFlowAnalysisService;
 
   public constructor(
     private mainChannel?: vscode.OutputChannel,
@@ -133,11 +134,16 @@ export class ControlFlowAnalysisService implements AnalysisServiceDelegate {
     }
   }
 
-  public addCallback(
+  public static addCallback(
     documentUri: string,
     listener: ControlFlowAnalysisCallback,
+    mainChannel?: vscode.OutputChannel,
+    logChannel?: vscode.LogOutputChannel,
   ) {
-    this.callbacks.set(documentUri, listener);
+    ControlFlowAnalysisService.getInstance(
+      mainChannel,
+      logChannel,
+    ).callbacks.set(documentUri, listener);
   }
 
   finishTask(
@@ -168,10 +174,24 @@ export class ControlFlowAnalysisService implements AnalysisServiceDelegate {
     mainChannel?: vscode.OutputChannel,
     logChannel?: vscode.LogOutputChannel,
   ) {
-    const service = new ControlFlowAnalysisService(mainChannel, logChannel);
     return (result: ApiResult) => {
-      service.handleControlFlowAst(result).catch(() => {});
+      ControlFlowAnalysisService.getInstance(mainChannel, logChannel)
+        .handleControlFlowAst(result)
+        .catch(() => {});
     };
+  }
+
+  private static getInstance(
+    mainChannel?: vscode.OutputChannel,
+    logChannel?: vscode.LogOutputChannel,
+  ): ControlFlowAnalysisService {
+    if (!ControlFlowAnalysisService.instance) {
+      ControlFlowAnalysisService.instance = new ControlFlowAnalysisService(
+        mainChannel,
+        logChannel,
+      );
+    }
+    return ControlFlowAnalysisService.instance;
   }
 }
 

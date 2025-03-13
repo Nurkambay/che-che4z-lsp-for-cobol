@@ -59,15 +59,20 @@ import {
 import { CopybooksCompletionProvider } from "./services/copybook/CopybooksCompletionProvider";
 import { SubroutinesCompletionsProvider } from "./services/subroutines/SubroutinesCompletionsProvider";
 import { ControlFlowAnalysisService } from "./services/ControlFlowService";
+import { GraphDTO } from "@code4z/analysis/lib/model/GraphDTO";
 
 interface __AnalysisApi {
   analysis(uri: string, text: string, pos?: vscode.Position): Promise<unknown>;
+  addAnalysisCallback(
+    uri: string,
+    callback: (graphs: GraphDTO[]) => void,
+  ): void;
 }
 
 let languageClientService: LanguageClientService;
 let outputChannel: vscode.OutputChannel;
 let controlFlowChannel: vscode.LogOutputChannel;
-const API_VERSION: string = "1.0.0";
+const API_VERSION: string = "1.0.1";
 
 async function initialize(context: vscode.ExtensionContext) {
   // We need lazy initialization to be able to mock this for unit testing
@@ -235,6 +240,9 @@ export async function activate(
         text,
         pos || findPosition(uri),
       );
+    },
+    addAnalysisCallback(uri: string, callback: (graphs: GraphDTO[]) => void) {
+      ControlFlowAnalysisService.addCallback(uri, callback);
     },
   };
 }
