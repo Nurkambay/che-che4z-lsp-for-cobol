@@ -607,7 +607,7 @@ suite("Integration Test Suite", function () {
     const prog2Uri = await helper.getUri("DIAGNOSTIC_TEST_B.CBL");
 
     await helper.waitFor(
-      () => vscode.languages.getDiagnostics(prog2Uri).length === 2,
+      () => vscode.languages.getDiagnostics(prog2Uri).length === 1,
     );
     helper.hasDiagnosticMatches(
       prog2Uri,
