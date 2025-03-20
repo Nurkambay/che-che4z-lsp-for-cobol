@@ -27,9 +27,10 @@ suite("Integration Test Suite", function () {
     helper.TEST_TIMEOUT,
   );
 
-  this.afterAll(async () => await helper.closeAllEditors()).timeout(
-    helper.TEST_TIMEOUT,
-  );
+  this.afterAll(async () => {
+    await helper.closeAllEditors();
+    await helper.updateConfig("basic.json");
+  }).timeout(helper.TEST_TIMEOUT);
 
   test("Show errors only for opened files", async () => {
     // Open program with error inside a copybook
