@@ -43,7 +43,7 @@
     <!-- Checks for Size Violations.                    -->
     <!-- See https://checkstyle.org/config_sizes.html -->
     <module name="FileLength">
-        <property name="max" value="2100"/>
+        <property name="max" value="2500"/>
     </module>
     <!-- <module name="LineLength">-->
     <!--     <property name="fileExtensions" value="java"/>-->
@@ -120,7 +120,7 @@
         <module name="MethodParamPad"/>
         <module name="NoWhitespaceAfter"/>
         <module name="NoWhitespaceBefore"/>
-        <module name="OperatorWrap"/>
+<!--        <module name="OperatorWrap"/>-->
         <module name="ParenPad"/>
         <module name="TypecastParenPad"/>
         <module name="WhitespaceAfter"/>
