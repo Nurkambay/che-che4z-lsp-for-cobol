@@ -16,15 +16,13 @@ package org.eclipse.lsp.cobol.common.symbols;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import java.util.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.eclipse.lsp.cobol.common.model.tree.CodeBlockDefinitionNode;
 import org.eclipse.lsp.cobol.common.model.tree.Node;
 import org.eclipse.lsp.cobol.common.model.tree.ProgramNode;
 import org.eclipse.lsp.cobol.common.model.tree.variable.VariableNode;
 import org.eclipse.lsp4j.Range;
-
-import java.util.*;
 
 /** A container for symbol information */
 @Getter
@@ -51,15 +49,21 @@ public class SymbolTable {
 
   /**
    * Generates unique key for the program
+   *
    * @param program node
    * @return string value of a generated key
    */
   public static String generateKey(ProgramNode program) {
     Range range = program.getLocality().getRange();
-    String rangeString = "["
-            + range.getStart().getLine() + ", " + range.getStart().getCharacter()
+    String rangeString =
+        "["
+            + range.getStart().getLine()
+            + ", "
+            + range.getStart().getCharacter()
             + "-"
-            + range.getEnd().getLine() + ", " + range.getEnd().getCharacter()
+            + range.getEnd().getLine()
+            + ", "
+            + range.getEnd().getCharacter()
             + "]";
     return program.getProgramName() + "%" + program.getLocality().getUri() + "%" + rangeString;
   }
@@ -70,17 +74,16 @@ public class SymbolTable {
   }
 
   private static boolean isGlobal(VariableNode node) {
-    if(node.isGlobal()) {
+    if (node.isGlobal()) {
       return true;
     }
     Node parent = node.getParent();
     while (parent != null) {
-      if(parent instanceof VariableNode && ((VariableNode) parent).isGlobal()) {
+      if (parent instanceof VariableNode && ((VariableNode) parent).isGlobal()) {
         return true;
       }
       parent = parent.getParent();
     }
     return false;
   }
-
 }

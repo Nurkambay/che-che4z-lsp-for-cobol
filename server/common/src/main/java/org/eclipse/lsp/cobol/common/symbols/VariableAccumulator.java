@@ -39,6 +39,7 @@ public interface VariableAccumulator {
 
   /**
    * Get the symbol table for the given program
+   *
    * @param program the program
    * @return the symbol table
    */
@@ -46,9 +47,9 @@ public interface VariableAccumulator {
 
   /**
    * Register implicit section
+   *
    * @param programNode the program
    * @param node the section definition
    */
   void registerImplicitSection(ProgramNode programNode, CodeBlockDefinitionNode node);
-
 }

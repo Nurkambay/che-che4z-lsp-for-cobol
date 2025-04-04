@@ -14,8 +14,16 @@
  */
 package org.eclipse.lsp.cobol.positive;
 
+import static java.lang.System.getProperty;
+import static java.util.Collections.emptyList;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.experimental.UtilityClass;
 import org.eclipse.lsp.cobol.common.model.Locality;
 import org.eclipse.lsp.cobol.common.model.NodeType;
@@ -31,15 +39,6 @@ import org.eclipse.lsp.cobol.core.engine.symbols.SymbolsRepository;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Range;
 import org.junit.jupiter.api.Assertions;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static java.lang.System.getProperty;
-import static java.util.Collections.emptyList;
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toList;
 
 /** Utility class for Positive Tests. */
 @UtilityClass
@@ -92,7 +91,8 @@ public class PositiveTestUtility {
       String fileName) {
     if (blacklistedTestFiles.contains(fileName)) return;
     Multimap<String, Node> variableDefinitionFromLSPEngine = ArrayListMultimap.create();
-    Multimap<ProcedureId, CodeBlockReference> procedureDefinitionsFromLSPEngine = ArrayListMultimap.create();
+    Multimap<ProcedureId, CodeBlockReference> procedureDefinitionsFromLSPEngine =
+        ArrayListMultimap.create();
     Multimap<String, Node> programDefinitionFromLSPEngine = ArrayListMultimap.create();
 
     fetchReferencesFromLSPEngine(
@@ -146,17 +146,20 @@ public class PositiveTestUtility {
           Collection<CodeBlockReference> codeBlockReferences = paragraphDefFromLSPEngine.get(pId);
           List<Location> defs = new ArrayList<>();
           List<Location> usages = new ArrayList<>();
-          codeBlockReferences.forEach(ref -> {
-              defs.addAll(ref.getDefinitions());
-              usages.addAll(ref.getUsage());
-          });
+          codeBlockReferences.forEach(
+              ref -> {
+                defs.addAll(ref.getDefinitions());
+                usages.addAll(ref.getUsage());
+              });
 
-          Assertions.assertFalse(defs.isEmpty(), "["
-                    + fileName
-                    + "]:"
-                    + "Procedure definition for "
-                    + dataName
-                    + " not found in LSP engine");
+          Assertions.assertFalse(
+              defs.isEmpty(),
+              "["
+                  + fileName
+                  + "]:"
+                  + "Procedure definition for "
+                  + dataName
+                  + " not found in LSP engine");
           assertReferencesByProcedures(snap, usages, fileName);
 
           // TODO : Update snap object when flag provided
@@ -173,7 +176,8 @@ public class PositiveTestUtility {
             .collect(Collectors.toList());
     if (snap.getReferencesLocation() != null) {
       snap.getReferencesLocation()
-          .forEach(snapRef -> {
+          .forEach(
+              snapRef -> {
                 boolean match = lspNodes.stream().map(Location::getRange).anyMatch(snapRef::equals);
                 Assertions.assertTrue(
                     match,
@@ -181,7 +185,9 @@ public class PositiveTestUtility {
                         + fileName
                         + "]:"
                         + "Procedure snapReferences for "
-                        + snap.getDataName() + " at " + snap.getDefinedLineNo()
+                        + snap.getDataName()
+                        + " at "
+                        + snap.getDefinedLineNo()
                         + " not found at line no: "
                         + snapRef);
               });
@@ -373,12 +379,13 @@ public class PositiveTestUtility {
         .map(ProgramNode.class::cast)
         .forEach(
             programNode -> {
-              repo.getProceduresMap(programNode).forEach((key, value) -> {
-                  String name = key.isParagraph()
-                          ? key.getParagraphName()
-                          : key.getSectionName();
-                  procedureDefFromLSPEngine.put(new ProcedureId(null, name), value);
-              });
+              repo.getProceduresMap(programNode)
+                  .forEach(
+                      (key, value) -> {
+                        String name =
+                            key.isParagraph() ? key.getParagraphName() : key.getSectionName();
+                        procedureDefFromLSPEngine.put(new ProcedureId(null, name), value);
+                      });
               repo.getVariables(programNode).values().stream()
                   .flatMap(Node::getDepthFirstStream)
                   .filter(VariableNode.class::isInstance)

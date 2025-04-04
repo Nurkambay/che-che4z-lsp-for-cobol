@@ -14,12 +14,11 @@
  */
 package org.eclipse.lsp.cobol.service.delegates.completions;
 
+import java.util.Collection;
+import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.eclipse.lsp.cobol.service.CobolDocumentModel;
 import org.eclipse.lsp4j.CompletionItem;
-
-import javax.annotation.Nullable;
-import java.util.Collection;
 
 /**
  * Completion provider that allows to resolve autocomplete requests with specific items based on

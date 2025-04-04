@@ -14,8 +14,17 @@
  */
 package org.eclipse.lsp.cobol.service.delegates.completions;
 
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
+import static org.eclipse.lsp.cobol.common.model.NodeType.PROGRAM;
+import static org.eclipse.lsp.cobol.common.model.tree.Node.hasType;
+import static org.eclipse.lsp.cobol.service.delegates.completions.CompletionOrder.SECTIONS;
+
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import java.util.Collection;
+import java.util.Map;
+import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.eclipse.lsp.cobol.common.model.tree.ProgramNode;
 import org.eclipse.lsp.cobol.common.symbols.ProcedureId;
@@ -23,16 +32,6 @@ import org.eclipse.lsp.cobol.core.engine.symbols.SymbolsRepository;
 import org.eclipse.lsp.cobol.service.CobolDocumentModel;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
-
-import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.Map;
-
-import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
-import static org.eclipse.lsp.cobol.common.model.tree.Node.hasType;
-import static org.eclipse.lsp.cobol.common.model.NodeType.PROGRAM;
-import static org.eclipse.lsp.cobol.service.delegates.completions.CompletionOrder.SECTIONS;
 
 /** Provides completion functionality for sections */
 @Singleton
