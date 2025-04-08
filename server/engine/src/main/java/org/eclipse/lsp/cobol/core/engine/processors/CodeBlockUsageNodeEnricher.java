@@ -14,22 +14,19 @@
  */
 package org.eclipse.lsp.cobol.core.engine.processors;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
+import org.eclipse.lsp.cobol.common.model.tree.CodeBlockUsageNode;
 import org.eclipse.lsp.cobol.common.model.tree.ProgramNode;
 import org.eclipse.lsp.cobol.common.processor.ProcessingContext;
 import org.eclipse.lsp.cobol.common.processor.Processor;
 import org.eclipse.lsp.cobol.common.symbols.CodeBlockReference;
 import org.eclipse.lsp.cobol.core.engine.symbols.SymbolAccumulator;
-import org.eclipse.lsp.cobol.common.model.tree.CodeBlockUsageNode;
 import org.eclipse.lsp4j.Location;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-/**
- * Enrich code block name node with necessary data
- */
+/** Enrich code block name node with necessary data */
 @AllArgsConstructor
 public class CodeBlockUsageNodeEnricher implements Processor<CodeBlockUsageNode> {
   private final SymbolAccumulator symbolAccumulator;
@@ -41,7 +38,8 @@ public class CodeBlockUsageNodeEnricher implements Processor<CodeBlockUsageNode>
       return;
     }
     ProgramNode programNode = programOpt.get();
-    List<CodeBlockReference> codeBlockReferences = symbolAccumulator.getCodeBlockReference(programNode, node);
+    List<CodeBlockReference> codeBlockReferences =
+        symbolAccumulator.getCodeBlockReference(programNode, node);
     if (codeBlockReferences.size() == 1) {
       node.setDefinitions(codeBlockReferences.get(0).getDefinitions());
       node.setUsages(codeBlockReferences.get(0).getUsage());

@@ -19,26 +19,20 @@ import com.google.common.collect.ImmutableMap;
 import org.eclipse.lsp.cobol.test.engine.UseCaseEngine;
 import org.junit.jupiter.api.Test;
 
-/**
- * Test for double PERFORM call on the same procedure.
- */
+/** Test for double PERFORM call on the same procedure. */
 public class DoublePerformTest {
-    private static final String TEXT =
-            "       IDENTIFICATION DIVISION.\n"
-                    + "          PROGRAM-ID. TEST1.\n"
-                    + "          PROCEDURE DIVISION.\n"
-                    + "          {@*SECT} SECTION.\n"
-                    + "            PERFORM {#PARAG}.\n"
-                    + "            PERFORM {#PARAG}.\n"
-                    + "          {#*PARAG}.\n"
-                    + "            DISPLAY \"\".";
+  private static final String TEXT =
+      "       IDENTIFICATION DIVISION.\n"
+          + "          PROGRAM-ID. TEST1.\n"
+          + "          PROCEDURE DIVISION.\n"
+          + "          {@*SECT} SECTION.\n"
+          + "            PERFORM {#PARAG}.\n"
+          + "            PERFORM {#PARAG}.\n"
+          + "          {#*PARAG}.\n"
+          + "            DISPLAY \"\".";
 
-    @Test
-    void test() {
-        UseCaseEngine.runTest(
-                TEXT,
-                ImmutableList.of(),
-                ImmutableMap.of(),
-                ImmutableList.of());
-    }
+  @Test
+  void test() {
+    UseCaseEngine.runTest(TEXT, ImmutableList.of(), ImmutableMap.of(), ImmutableList.of());
+  }
 }
