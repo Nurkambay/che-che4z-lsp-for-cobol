@@ -20,6 +20,8 @@ import com.google.gson.Gson;
 import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.lsp.cobol.common.model.tree.*;
 import org.eclipse.lsp.cobol.common.model.tree.statements.StatementNode;
@@ -249,6 +251,15 @@ public class CFASTBuilderImpl implements CFASTBuilder {
   }
 
   private void traverse(ProgramNode node, List<Program> programs) {
+    List<Node> workingStorageNodes = node.getChildren()
+        .stream()
+        .filter(it -> it instanceof DivisionNode)
+        .map(DivisionNode.class::cast)
+        .filter(it -> it.getDivisionType() == DivisionType.DATA_DIVISION)
+        .flatMap(Node::getDepthFirstStream)
+        .filter(n -> n instanceof ExecCicsHandleNode || n instanceof ExecSqlNode)
+        .collect(Collectors.toList());
+
     node.getChildren().stream()
         .filter(it -> it instanceof DivisionNode)
         .map(DivisionNode.class::cast)
@@ -257,6 +268,7 @@ public class CFASTBuilderImpl implements CFASTBuilder {
         .ifPresent(
             n -> {
               Program program = new Program(node.getProgramName(), convertLocation(n));
+              workingStorageNodes.forEach(wsn -> traverse(program, wsn));
               n.getChildren().forEach(child -> traverse(program, child));
               traverse(program, n);
               programs.add(program);
