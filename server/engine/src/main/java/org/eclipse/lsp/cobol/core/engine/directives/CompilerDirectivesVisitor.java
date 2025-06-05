@@ -14,6 +14,9 @@
  */
 package org.eclipse.lsp.cobol.core.engine.directives;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import org.eclipse.lsp.cobol.common.error.ErrorSeverity;
 import org.eclipse.lsp.cobol.common.error.ErrorSource;
 import org.eclipse.lsp.cobol.common.error.SyntaxError;
@@ -120,5 +123,33 @@ public class CompilerDirectivesVisitor extends CompilerDirectivesParserBaseVisit
                           .build());
             });
     return super.visitCompilableSupportedDeprecatedCompilerDirectives(ctx);
+  }
+
+  @Override
+  public Object visitCicsTranslatorDirectives(
+      CompilerDirectivesParser.CicsTranslatorDirectivesContext ctx) {
+    Function<String, List<String>> cicsInitializer =
+        key -> {
+          List<String> initial = new ArrayList<>();
+          if (analysisContext.getConfig() != null
+              && analysisContext.getConfig().getPreprocessorsDirectives() != null) {
+            List<String> directivesConfig =
+                analysisContext.getConfig().getPreprocessorsDirectives().get("CICS");
+            if (directivesConfig != null) {
+              initial.addAll(directivesConfig);
+            }
+          }
+          return initial;
+        };
+
+    List<String> cicsDirectives =
+        analysisContext.getPreprocessorsDirectives().computeIfAbsent("CICS", cicsInitializer);
+    for (CompilerDirectivesParser.CicsTranslatorOptionsContext options :
+        ctx.cicsTranslatorOptions()) {
+      if (options != null) {
+        cicsDirectives.add(options.getText());
+      }
+    }
+    return super.visitCicsTranslatorDirectives(ctx);
   }
 }
