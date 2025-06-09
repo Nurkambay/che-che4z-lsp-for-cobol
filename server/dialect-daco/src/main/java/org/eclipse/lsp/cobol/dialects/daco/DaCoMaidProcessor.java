@@ -108,7 +108,7 @@ public class DaCoMaidProcessor {
         }
         Matcher copyFrom = dataDescriptionEntryWithCopyFromPattern.matcher(line);
         if (copyFrom.find()) {
-          createCopyFromNode(copyFrom, lineNumber, context, errors).ifPresent(dacoNodes::add);
+          dacoNodes.add(createCopyFromNode(copyFrom, lineNumber, context));
         }
       } else if (dataDivisionPattern.matcher(line).find()) {
         state = DaCoMaidProcessingState.DATA_DIVISION;
@@ -119,9 +119,14 @@ public class DaCoMaidProcessor {
     return new DialectOutcome(dacoNodes, context);
   }
 
-  private Optional<Node> createCopyFromNode(
-          Matcher copyFrom, int lineNumber, DialectProcessingContext context, List<SyntaxError> errors) {
+  private Node createCopyFromNode(
+      Matcher copyFrom, int lineNumber, DialectProcessingContext context) {
     String entryName = copyFrom.group("entryName");
+    if (!DaCoHelper.extractSuffix(entryName).isPresent()) {
+      // TODO: an error
+      return null;
+    }
+    Optional<String> newSuffix = DaCoHelper.extractSuffix(entryName);
     String prototypeName =
         entryName.substring(0, entryName.length() - 2) + copyFrom.group("protoSuffix");
     int startChar = copyFrom.start("copyfrom");
@@ -138,19 +143,8 @@ public class DaCoMaidProcessor {
             .range(originalLocation.getRange())
             .build();
 
-    Optional<String> newSuffix = DaCoHelper.extractSuffix(entryName);
-    if (!newSuffix.isPresent()) {
-      errors.add(SyntaxError.syntaxError()
-              .errorSource(ErrorSource.DIALECT)
-              .severity(ErrorSeverity.ERROR)
-              .suggestion(
-                      messageService.getMessage("GrammarPreprocessorListener.cannotRetrieveMaidSuffix"))
-              .location(locality.toOriginalLocation())
-              .build());
-    }
-
-    return Optional.of(new DaCoCopyFromNode(
-        locality, prototypeName, newSuffix.orElse(""), Integer.parseInt(copyFrom.group("lvl"))));
+    return new DaCoCopyFromNode(
+        locality, prototypeName, newSuffix.orElse(""), Integer.parseInt(copyFrom.group("lvl")));
   }
 
   private void collectCopyMaid(
@@ -279,7 +273,7 @@ public class DaCoMaidProcessor {
               .errorSource(ErrorSource.DIALECT)
               .severity(ErrorSeverity.ERROR)
               .suggestion(
-                  messageService.getMessage("GrammarPreprocessorListener.cannotRetrieveMaidWrkSuffix"))
+                  messageService.getMessage("GrammarPreprocessorListener.cannotRetrieveMaidSuffix"))
               .location(node.getLocality().toOriginalLocation())
               .build();
       errors.add(error);
