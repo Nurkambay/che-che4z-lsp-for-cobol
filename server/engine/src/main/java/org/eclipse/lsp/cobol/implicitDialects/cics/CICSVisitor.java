@@ -75,11 +75,14 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
   private final DialectProcessingContext context;
   private final MessageService messageService;
   private final CICSOptionsCheckUtility cicsOptionsCheckUtility;
+  private final CICSCheckUtilityParameters cicsOptionsCheckUtilityParams;
 
   CICSVisitor(DialectProcessingContext context, MessageService messageService) {
     this.context = context;
     this.messageService = messageService;
-    this.cicsOptionsCheckUtility = new CICSOptionsCheckUtility(context, errors, getCheckParams());
+    this.cicsOptionsCheckUtilityParams = getCheckParams();
+    this.cicsOptionsCheckUtility =
+        new CICSOptionsCheckUtility(context, errors, cicsOptionsCheckUtilityParams);
   }
 
   @Getter private final List<SyntaxError> errors = new LinkedList<>();
@@ -325,7 +328,8 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
                     locality ->
                         throwException(
                             locality,
-                            MessageTemplate.of("CobolVisitor.AreaBWarningMsg", token.getText()))));
+                            MessageTemplate.of("CobolVisitor.AreaBWarningMsg", token.getText()),
+                            ErrorSeverity.WARNING)));
   }
 
   private Locality getTokenLocality(Token token) {
@@ -349,13 +353,14 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
     };
   }
 
-  private void throwException(@NonNull Locality locality, MessageTemplate messageTemplate) {
+  private void throwException(
+      @NonNull Locality locality, MessageTemplate messageTemplate, ErrorSeverity severity) {
     SyntaxError error =
         SyntaxError.syntaxError()
             .errorSource(ErrorSource.PARSING)
             .location(locality.toOriginalLocation())
             .messageTemplate(messageTemplate)
-            .severity(ErrorSeverity.WARNING)
+            .severity(severity)
             .build();
 
     LOG.debug("Syntax error by CobolVisitor#throwException: {}", error);
@@ -394,10 +399,33 @@ class CICSVisitor extends CICSParserBaseVisitor<List<Node>> {
         case "EXCI":
           cicsCheckUtilityParameters.exciEnabled = true;
           break;
+        case "APOST":
+          cicsCheckUtilityParameters.quoteEnabled = false;
+          break;
+        case "QUOTE":
+          cicsCheckUtilityParameters.quoteEnabled = true;
+          break;
         default:
           break;
       }
     }
     return cicsCheckUtilityParameters;
+  }
+
+  @Override
+  public List<Node> visitVariableNameUsage(CICSParser.VariableNameUsageContext ctx) {
+    if ((ctx.NONNUMERICLITERAL() != null || ctx.NUMERICLITERAL() != null)) {
+      if (cicsOptionsCheckUtilityParams.quoteEnabled && ctx.getText().endsWith("\'"))
+        throwException(
+            getTokenLocality(ctx.start),
+            MessageTemplate.of("cics.invalidLiteralDelimeter", "\""),
+            ErrorSeverity.ERROR);
+      else if (!cicsOptionsCheckUtilityParams.quoteEnabled && ctx.getText().endsWith("\""))
+        throwException(
+            getTokenLocality(ctx.start),
+            MessageTemplate.of("cics.invalidLiteralDelimeter", "'"),
+            ErrorSeverity.ERROR);
+    }
+    return visitChildren(ctx);
   }
 }
