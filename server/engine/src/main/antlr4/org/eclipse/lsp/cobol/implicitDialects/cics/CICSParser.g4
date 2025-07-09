@@ -200,7 +200,7 @@ cics_assign_parameter1: ABCODE cics_data_area | ABDUMP cics_data_area | ABOFFSET
 
 cics_assign_parameter2: MAPLINE cics_data_area | MAPWIDTH cics_data_area | MICROVERSION cics_data_area | MINORVERSION cics_data_area |
              MSRCONTROL cics_data_area | NATLANGINUSE cics_data_area |NETNAME cics_data_area | NEXTTRANSID cics_data_area |
-             NUMTAB cics_data_area | OPCLASS cics_data_area | OPERKEYS cics_data_area | OPID cics_data_area | OPSECURITY cics_data_area | ORGABCODE cics_data_area |
+             NUMTAB cics_data_area | OPCLASS cics_data_area | OPERATION cics_data_area | OPERKEYS cics_data_area | OPID cics_data_area | OPSECURITY cics_data_area | ORGABCODE cics_data_area |
              OUTLINE cics_data_area | PAGENUM cics_data_area | PARTNPAGE cics_data_area | PARTNS cics_data_area |
              PARTNSET cics_data_area | PLATFORM cics_data_area | PRINSYSID cics_data_area | PROCESS cics_data_area | PROCESSTYPE cics_data_area |
              PROGRAM cics_data_area | PS cics_data_area | QNAME cics_data_area | RESSEC cics_data_area |
