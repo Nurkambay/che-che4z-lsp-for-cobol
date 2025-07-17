@@ -11,7 +11,6 @@
  * Contributors:
  *   Broadcom, Inc. - initial API and implementation
  */
-import { SettingsService } from "../../Settings";
 import { splitFilename } from "../../util/FSUtils";
 import {
   MemberCacheItem,
@@ -23,25 +22,21 @@ import * as vscode from "vscode";
  * Copybook downloader from USS using Zowe Explorer
  */
 export class CopybookDownloaderForUss extends ZoweExplorerDownloader {
-  protected schema = "zowe-uss";
-  protected separator = "";
-
-  constructor(explorerAPI: IApiRegisterClient) {
-    super(explorerAPI);
+  constructor() {
+    super();
   }
 
   public async getAllMembers(
     profileName: string,
     dataset: string,
+    allowedCopybooksExtensions: string[],
   ): Promise<MemberCacheItem[]> {
-    const id = this.createId(profileName, dataset);
+    const id = this.createId(profileName, dataset, allowedCopybooksExtensions);
 
     if (this.memberListCache.has(id)) {
       return this.memberListCache.get(id)!;
     }
 
-    let allowedCopybooksExtensions =
-      await SettingsService.getCopybookExtension();
     allowedCopybooksExtensions = allowedCopybooksExtensions?.map((ext) =>
       ext.toLowerCase(),
     );
@@ -53,7 +48,7 @@ export class CopybookDownloaderForUss extends ZoweExplorerDownloader {
       `list USS directory ${profileName}/${dataset}`,
       async () => {
         const response = await vscode.workspace.fs.readDirectory(
-          vscode.Uri.parse(`${this.schema}:/${profileName}${dataset}`),
+          vscode.Uri.parse(`zowe-uss:/${profileName}${dataset}`),
         );
 
         for (const file of response) {
@@ -71,10 +66,10 @@ export class CopybookDownloaderForUss extends ZoweExplorerDownloader {
             }
           }
         }
+        this.memberListCache.set(id, members);
       },
     );
 
-    this.memberListCache.set(id, members);
     return members;
   }
 }

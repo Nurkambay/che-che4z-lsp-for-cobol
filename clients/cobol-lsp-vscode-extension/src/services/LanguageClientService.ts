@@ -39,7 +39,7 @@ import {
   setUpProcessorGroupConfigWatcher,
   setUpProgramConfigWatcher,
 } from "./ProcessorGroups";
-import { localCopybooks } from "./copybook/LocalCopybooksService";
+import { localCopybooks } from "./copybookLibs/LocalPathLib";
 
 const extensionId = "BroadcomMFD.cobol-language-support";
 
@@ -118,7 +118,7 @@ export class LanguageClientService {
     return languageClient.sendRequest("extended/analysis", params);
   }
 
-  public async invalidateConfiguration() {
+  public invalidateConfiguration = async () => {
     const languageClient = this.getLanguageClient();
     await languageClient.sendNotification(
       DidChangeConfigurationNotification.type,
@@ -126,7 +126,7 @@ export class LanguageClientService {
         settings: null,
       },
     );
-  }
+  };
 
   private fileChanges: FileEvent[] = [];
   private fileChangeTimer: ReturnType<typeof setTimeout> | undefined =
@@ -189,8 +189,8 @@ export class LanguageClientService {
       outputChannel: this.outputChannel,
       synchronize: {
         fileEvents: [
-          setUpProgramConfigWatcher(),
-          setUpProcessorGroupConfigWatcher(),
+          setUpProgramConfigWatcher(this.invalidateConfiguration),
+          setUpProcessorGroupConfigWatcher(this.invalidateConfiguration),
           vscode.workspace.createFileSystemWatcher(
             new vscode.RelativePattern(this.storagePath, "**/*"),
           ),

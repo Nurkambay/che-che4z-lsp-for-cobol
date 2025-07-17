@@ -12,8 +12,7 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 
-import { ProfileUtils } from "../../../../services/util/ProfileUtils";
-import { createZoweExplorerMock } from "../../../../__mocks__/getZoweExplorerMock.utility";
+import * as ProfileUtils from "../../../../services/util/ProfileUtils";
 import * as vscode from "vscode";
 import { TextEncoder } from "util";
 import { SettingsService } from "../../../../services/Settings";
@@ -40,8 +39,8 @@ describe("Tests Copybook download from USS", () => {
     });
 
     it("checks eligibility based on DSN settings", () => {
-      ProfileUtils.getProfileNameForCopybook = jest
-        .fn()
+      jest
+        .spyOn(ProfileUtils, "getProfileNameForCopybook")
         .mockReturnValue("test-profile");
     });
   });
@@ -52,7 +51,7 @@ describe("Tests Copybook download from USS", () => {
       jest
         .spyOn(SettingsService, "getCopybookExtension")
         .mockResolvedValue([".cpy", ""]);
-      downloader = new CopybookDownloaderForUss(createZoweExplorerMock());
+      downloader = new CopybookDownloaderForUss();
     });
 
     describe("checks eligible copybook invoke appropriate ZE Api's", () => {
@@ -64,17 +63,18 @@ describe("Tests Copybook download from USS", () => {
         jest
           .spyOn(SettingsService, "getCopybookFileEncoding")
           .mockReturnValue("utf8");
-        jest
-          .spyOn(SettingsService, "getCopybookExtension")
-          .mockResolvedValue([".cpy", ""]);
       });
 
       it("checks hasMember adds fetched list to cache when cache doesn't have the member and checks hasMember uses cache when have member is cached", async () => {
-        await downloader.hasMember("profile", "/ussFile", "uss_copybook");
+        await downloader.hasMember("profile", "/ussFile", "uss_copybook", [
+          ".cpy",
+          "",
+        ]);
         const res = await downloader.hasMember(
           "profile",
           "/ussFile",
           "uss_copybook",
+          [".cpy", ""],
         );
         expect(vscode.workspace.fs.readDirectory).toHaveBeenCalledTimes(1);
         expect(res).toStrictEqual({ extension: ".cpy", name: "uss_copybook" });

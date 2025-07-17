@@ -12,15 +12,14 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 import * as path from "path";
-import type {
-  CompletionItem as VSCodeCompletionItem,
-  OutputChannel as OutputChannelType,
-  Position as PositionType,
-  Uri as UriType,
+import {
+  type CompletionItem as VSCodeCompletionItem,
+  type LogOutputChannel as LogOutputChannelType,
+  type Position as PositionType,
+  type Uri as UriType,
+  type TextDocument,
 } from "vscode";
 import { URI, Utils } from "vscode-uri";
-
-import { readFile } from "fs/promises";
 
 export const readDirectoryResult: {
   [path: string]:
@@ -28,22 +27,45 @@ export const readDirectoryResult: {
     | Error;
 } = {};
 
+export const readFileResult: {
+  [path: string]: string | Error;
+} = {};
+
+export const findFilesResult: {
+  [path: string]: URI[];
+} = {};
+
+const workspaceFoldersMock = [
+  {
+    name: "workspace",
+    uri: URI.file("/workspace"),
+    index: 0,
+  },
+  {
+    name: "other",
+    uri: URI.file("/other"),
+    index: 1,
+  },
+];
+export const getWorkspaceFolderResult = workspaceFoldersMock[0];
+
+export const getConfigurationResult: { [key: string]: unknown } = {
+  "cobol-lsp.smart-tab": undefined,
+};
+
+export const diagnosticsCollectionMock = {
+  set: jest.fn(),
+  clear: jest.fn(),
+  delete: jest.fn(),
+};
+
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace workspace {
-  export const workspaceFolders = [
-    {
-      name: "workspace",
-      uri: URI.parse("/workspace"),
-      index: 0,
-    },
-  ];
+  export const workspaceFolders = workspaceFoldersMock;
   export function getConfiguration() {
     return {
       get: (key: string) => {
-        if ("cobol-lsp.smart-tab" === key) {
-          return undefined;
-        }
-        return jest.fn();
+        return getConfigurationResult[key];
       },
     };
   }
@@ -56,14 +78,17 @@ export namespace workspace {
     };
   }
   export const fs = {
-    readFile: async (uri: UriType): Promise<Uint8Array | undefined> => {
-      const path = uri.fsPath;
-      try {
-        return await readFile(path);
-      } catch (_err) {
-        // ignore
+    readFile: jest.fn().mockImplementation((uri: UriType) => {
+      const result = readFileResult[uri.path];
+      if (!result) {
+        throw new FileNotFound();
       }
-    },
+      if (result instanceof Error) {
+        throw result;
+      } else {
+        return Promise.resolve(new TextEncoder().encode(result));
+      }
+    }),
     writeFile: jest.fn(),
     delete: jest.fn().mockReturnValue(true),
     readDirectory: jest.fn().mockImplementation((uri: UriType) => {
@@ -100,13 +125,28 @@ export namespace workspace {
   export const onDidChangeConfiguration = jest
     .fn()
     .mockReturnValue("onDidChangeConfiguration");
-  export const textDocuments = [];
-  export function getWorkspaceFolder() {}
-  export async function findFiles() {
-    return Promise.resolve([]);
+  export const textDocuments: TextDocument[] = [
+    {
+      uri: URI.file("/workspace/edited"),
+      getText: jest.fn().mockReturnValue("EDITED"),
+    } as unknown as TextDocument,
+  ];
+  export function getWorkspaceFolder() {
+    return workspaceFolders[0];
   }
+  export const findFiles = jest
+    .fn()
+    .mockImplementation((pattern: { baseUri: URI }) => {
+      return Promise.resolve(findFilesResult[pattern.baseUri.path] ?? []);
+    });
   export const onDidChangeTextDocument = jest.fn();
   export const onDidCloseTextDocument = jest.fn();
+  export const asRelativePath = jest
+    .fn()
+    .mockImplementation((documentUri: UriType) => {
+      const wsPath = getWorkspaceFolder().uri.fsPath;
+      return path.relative(wsPath, documentUri.fsPath);
+    });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -137,7 +177,7 @@ export namespace window {
     onDidChangeSelection: jest.fn(),
   });
   export const setStatusBarMessage = jest.fn().mockResolvedValue(true);
-  export const createOutputChannel = (name: string): OutputChannelType => ({
+  export const createOutputChannel = (name: string): LogOutputChannelType => ({
     name,
     append: jest.fn(),
     appendLine: jest.fn(),
@@ -146,6 +186,13 @@ export namespace window {
     show: jest.fn(),
     hide: jest.fn(),
     dispose: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    trace: jest.fn(),
+    warn: jest.fn(),
+    onDidChangeLogLevel: jest.fn(),
+    logLevel: 2,
   });
   export const activeTextEditor = {
     document: {
@@ -264,10 +311,9 @@ export const TextEditorEdit = {
 export const languages = {
   registerCodeActionsProvider: jest.fn(),
   registerCompletionItemProvider: jest.fn(),
-  createDiagnosticCollection: jest.fn().mockReturnValue({
-    clear: jest.fn(),
-    delete: jest.fn(),
-  }),
+  createDiagnosticCollection: jest
+    .fn()
+    .mockReturnValue(diagnosticsCollectionMock),
 };
 
 export class FileNotFound extends Error {

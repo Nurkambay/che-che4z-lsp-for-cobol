@@ -32,9 +32,6 @@ import {
 function makefsPath(p: string): string {
   return path.join(process.platform == "win32" ? "a:" : "", p);
 }
-function makePath(p: string): string {
-  return (process.platform == "win32" ? "/a:" : "") + p;
-}
 
 describe("SettingsService evaluate variables", () => {
   beforeAll(() => {
@@ -45,103 +42,6 @@ describe("SettingsService evaluate variables", () => {
         index: 0,
       },
     ];
-  });
-  test("Evaluate fileBasenameNoExtension", async () => {
-    vscode.workspace.getConfiguration = jest.fn().mockReturnValue({
-      get: jest.fn().mockReturnValue(["copybook/${fileBasenameNoExtension}"]),
-    });
-    const paths = await SettingsService.getCopybookLocalPath(
-      "file:///program",
-      "COBOL",
-    );
-    expect(paths[0]).toEqual(makefsPath("/tmp-ws/copybook/program"));
-  });
-
-  test("Evaluate fileBasenameNoExtension", async () => {
-    vscode.workspace.getConfiguration = jest.fn().mockReturnValue({
-      get: jest.fn().mockReturnValue(["copybook/${fileBasenameNoExtension}"]),
-    });
-    const paths = await SettingsService.getCopybookLocalPath(
-      "file:///program.cbl",
-      "COBOL",
-    );
-    expect(paths[0]).toEqual(makefsPath("/tmp-ws/copybook/program"));
-  });
-
-  test("Evaluate fileBasenameNoExtension with extension and dots", async () => {
-    vscode.workspace.getConfiguration = jest.fn().mockReturnValue({
-      get: jest.fn().mockReturnValue(["copybook/${fileBasenameNoExtension}"]),
-    });
-
-    const paths = await SettingsService.getCopybookLocalPath(
-      "file:///program.file.cbl",
-      "COBOL",
-    );
-    expect(paths[0]).toEqual(makefsPath("/tmp-ws/copybook/program.file"));
-  });
-
-  test("Evaluate fileDirname", async () => {
-    vscode.workspace.getConfiguration = jest.fn().mockReturnValue({
-      get: jest.fn().mockReturnValue(["${fileDirname}/copybooks"]),
-    });
-    const paths = await SettingsService.getCopybookLocalPath(
-      "file://" + makePath("/toplevel/program"),
-      "COBOL",
-    );
-    expect(paths[0]).toEqual(makefsPath("/toplevel") + `${path.sep}copybooks`);
-  });
-
-  test("Evaluate fileDirnameBasename", async () => {
-    vscode.workspace.getConfiguration = jest.fn().mockReturnValue({
-      get: jest.fn().mockReturnValue(["${fileDirnameBasename}/copybooks"]),
-    });
-    const paths = await SettingsService.getCopybookLocalPath(
-      "file:///toplevel/program",
-      "COBOL",
-    );
-    expect(paths[0]).toEqual(makefsPath("/tmp-ws/toplevel/copybooks"));
-  });
-
-  test("Evaluate workspaceFolder", async () => {
-    vscode.workspace.getConfiguration = jest.fn().mockReturnValue({
-      get: jest.fn().mockReturnValue(["${workspaceFolder}/copybooks"]),
-    });
-    const paths = await SettingsService.getCopybookLocalPath(
-      "file://" + makePath("/toplevel/program"),
-      "COBOL",
-    );
-    expect(paths[0]).toEqual(makefsPath("/tmp-ws") + `${path.sep}copybooks`);
-  });
-
-  test("Evaluate workspaceFolder with name", async () => {
-    vscode.workspace.getConfiguration = jest.fn().mockReturnValue({
-      get: jest
-        .fn()
-        .mockReturnValue(["${workspaceFolder:workspace}/copybooks"]),
-    });
-    const paths = await SettingsService.getCopybookLocalPath(
-      "file://" + makePath("/toplevel/program"),
-      "COBOL",
-    );
-    expect(paths[0]).toEqual(makefsPath("/tmp-ws") + `${path.sep}copybooks`);
-  });
-
-  test("Get local settings for a dialect", async () => {
-    const tracking = jest.fn().mockReturnValue(["copybook"]);
-    vscode.workspace.getConfiguration = jest.fn().mockReturnValue({
-      get: tracking,
-    });
-    await SettingsService.getCopybookLocalPath("file:///PROGRAM", "COBOL");
-    expect(tracking).toHaveBeenCalledWith("paths-local");
-  });
-
-  test("Get local settings for dialect", async () => {
-    const tracking = jest.fn().mockReturnValue(["copybook"]);
-    vscode.workspace.getConfiguration = jest.fn().mockReturnValue({
-      get: tracking,
-    });
-    await SettingsService.getCopybookLocalPath("file:///PROGRAM", "MAID");
-    expect(tracking).toHaveBeenCalledWith("maid.paths-local");
   });
 
   test("Get native build enable settings", () => {
@@ -224,9 +124,7 @@ describe("SettingsService returns correct Copybook Configuration Values", () => 
       "dialect.paths-uss",
       undefined,
     );
-    expect(
-      SettingsService.getUssPath("file:///doc-uri", "dialect"),
-    ).toHaveLength(0);
+    expect(SettingsService.getUssPath("dialect")).toHaveLength(0);
   });
 
   test("returns configured array when dialect configuration is provided", () => {
@@ -234,10 +132,7 @@ describe("SettingsService returns correct Copybook Configuration Values", () => 
       "dialect.paths-uss",
       ["configured-dialect-settings"],
     );
-    const configuredValue = SettingsService.getUssPath(
-      "file:///doc-uri",
-      "dialect",
-    );
+    const configuredValue = SettingsService.getUssPath("dialect");
     expect(configuredValue).toHaveLength(1);
     expect(configuredValue[0]).toBe("configured-dialect-settings");
   });
@@ -247,34 +142,10 @@ describe("SettingsService returns correct Copybook Configuration Values", () => 
       "configured-cobol-settings",
     ]);
     const configuredValue = SettingsService.getUssPath(
-      "file:///doc-uri",
       SettingsService.DEFAULT_DIALECT,
     );
     expect(configuredValue).toHaveLength(1);
     expect(configuredValue[0]).toBe("configured-cobol-settings");
-  });
-});
-describe("SettingsService prepares local search folders", () => {
-  test("returns all paths are transformed into absolutes", () => {
-    const paths = [makefsPath("/absolute"), "relative"];
-    expect(
-      SettingsService.prepareLocalSearchFolders(paths, [
-        makefsPath("/workspacePath"),
-      ]),
-    ).toEqual([makefsPath("/absolute"), makefsPath("/workspacePath/relative")]);
-  });
-  test("all workspace paths concatanated into relative paths", () => {
-    const paths = [makefsPath("/absolute"), "relative"];
-    expect(
-      SettingsService.prepareLocalSearchFolders(paths, [
-        makefsPath("/workspacePath"),
-        makefsPath("/workspacePath2"),
-      ]),
-    ).toEqual([
-      makefsPath("/absolute"),
-      makefsPath("/workspacePath/relative"),
-      makefsPath("/workspacePath2/relative"),
-    ]);
   });
 });
 

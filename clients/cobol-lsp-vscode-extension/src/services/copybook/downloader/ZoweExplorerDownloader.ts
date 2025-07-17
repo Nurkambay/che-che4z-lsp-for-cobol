@@ -25,13 +25,9 @@ export abstract class ZoweExplorerDownloader {
     new Map();
   protected memberListCache: Map<string, MemberCacheItem[]> = new Map();
   protected failedRequests: Map<string, number> = new Map();
-  protected abstract schema: string;
-  protected abstract separator: string;
 
-  constructor(protected readonly explorerAPI: IApiRegisterClient) {}
-
-  protected createId(profileName: string, path: string) {
-    return `${profileName}-${path}`;
+  protected createId(profileName: string, path: string, extensions: string[]) {
+    return `${profileName}|${path}|${extensions.join("|")}`;
   }
 
   /**
@@ -71,8 +67,6 @@ export abstract class ZoweExplorerDownloader {
             }
           })();
         }
-
-        throw err;
       }
     }
   }
@@ -81,8 +75,13 @@ export abstract class ZoweExplorerDownloader {
     profileName: string,
     uss: string,
     copybookName: string,
+    allowedExtensions: string[],
   ): Promise<MemberCacheItem | undefined> {
-    const members = await this.getAllMembers(profileName, uss);
+    const members = await this.getAllMembers(
+      profileName,
+      uss,
+      allowedExtensions,
+    );
     copybookName = copybookName.toUpperCase();
     return members.find((member) => member.name.toUpperCase() === copybookName);
   }
@@ -90,19 +89,6 @@ export abstract class ZoweExplorerDownloader {
   public abstract getAllMembers(
     profileName: string,
     dataset: string,
+    extensions: string[],
   ): Promise<MemberCacheItem[]>;
-
-  public async resolveCopybookUri(
-    profileName: string,
-    dataset: string,
-    copybookName: string,
-  ) {
-    const member = await this.hasMember(profileName, dataset, copybookName);
-
-    if (member) {
-      return vscode.Uri.parse(
-        `${this.schema}:/${profileName}${this.separator}${dataset}/${member.name}${member.extension ? member.extension : ""}`,
-      );
-    }
-  }
 }
