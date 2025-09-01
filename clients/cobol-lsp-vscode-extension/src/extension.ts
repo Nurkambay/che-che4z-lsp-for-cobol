@@ -75,6 +75,7 @@ import {
 import { invalidateConfig } from "./services/ProcessorGroupsLoader";
 import { outputChannel } from "./services/util/OutputChannel";
 import { DialectService } from "./dialect/DialectService";
+import { createSampleConfiguration } from "./commands/CreateSampleConfiguration";
 
 interface __AnalysisApi {
   analysis(uri: string, text: string, pos?: vscode.Position): Promise<unknown>;
@@ -519,6 +520,13 @@ function registerCommands(context: vscode.ExtensionContext) {
       () => {
         externalApis.reenableFailedRequests();
       },
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "cobol-lsp.configuration.create-sample",
+      createSampleConfiguration,
     ),
   );
 }
