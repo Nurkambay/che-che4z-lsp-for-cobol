@@ -16,7 +16,7 @@ parser grammar IdmsParser;
 options {tokenVocab = IdmsLexer;  superClass = MessageServiceParser;}
 
 startRule: .*? idmsRules* EOF;
-idmsRules: (idmsStatements | idmsSections | idmsIfStatement | ifStatement | copyIdmsStatement) .*?;
+idmsRules: (idmsStatements | idmsLRStatements | idmsSections | idmsIfStatement | ifStatement | copyIdmsStatement) .*?;
 
 idmsSections
    : idmsControlSection | schemaSection | mapSection
@@ -1170,7 +1170,8 @@ cobolKeywords
    ;
 
 idmsKeywords
-   : DAY | DATE | DAY_OF_WEEK | TIME
+   : DAY | DATE | DAY_OF_WEEK | TIME | ALL | MATCHES | CONTAINS | AND
+   | EQ | GE | GT | LT | LE | OR | WHERE
    ;
 
 cobolCompilerDirectivesKeywords
@@ -1191,3 +1192,20 @@ cobolCompilerDirectivesKeywords
 endClause
     : (DOT_FS | SEMICOLON_FS)
     ;
+// --------- TOLERATE LR STATEMENTS ---------------//
+idmsLRStatements: obtainLRStatement;
+// obtain LR statement toleration
+obtainLRStatement
+    : OBTAIN (FIRST|NEXT)? logicalRecordName
+      (INTO altLogicalRecordLocation)?
+      (WHERE booleanExpression)?
+      imperativeStatementCall?
+    ;
+pathStatus: {validateLength(_input.LT(1).getText(), "path-status", 16);} cobolWord;
+imperativeStatementCall: ON pathStatus;
+booleanExpression: NOT? (comparison | logicalRecordField) ((AND | OR) NOT?  (comparison | logicalRecordField))*;
+logicalRecordField: cobolWord | literal;
+comparison: ((logicalRecordField | arithmeticExpression) (OF LR)?) (operator ((logicalRecordField | arithmeticExpression) (OF LR)?)) ;
+operator: CONTAINS | MATCHES | EQ | EQUALCHAR | NE | GT | MORETHANCHAR | LT | LESSTHANCHAR | GE | LE;
+altLogicalRecordLocation: idms_db_entity_name;
+logicalRecordName: cobolWord;

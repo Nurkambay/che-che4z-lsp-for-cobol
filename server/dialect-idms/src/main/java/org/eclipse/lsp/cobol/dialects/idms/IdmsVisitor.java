@@ -39,6 +39,8 @@ import org.eclipse.lsp.cobol.common.model.tree.variable.VariableNameAndLocality;
 import org.eclipse.lsp.cobol.common.model.tree.variable.VariableUsageNode;
 import org.eclipse.lsp.cobol.dialects.idms.IdmsParser.*;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 
 /**
  * This extension of {@link IdmsParserBaseVisitor} applies the semantic analysis based on the
@@ -75,6 +77,16 @@ class IdmsVisitor extends IdmsParserBaseVisitor<List<Node>> {
   @Override
   public List<Node> visitIdmsIfCondition(IdmsIfConditionContext ctx) {
     addReplacementContext(ctx);
+    return visitChildren(ctx);
+  }
+
+  @Override
+  public List<Node> visitObtainLRStatement(ObtainLRStatementContext ctx) {
+    if (ctx.imperativeStatementCall() == null) {
+      addReplacementContext(ctx);
+    } else {
+      addReplacementImperativeStatementContext(ctx, ctx.imperativeStatementCall());
+    }
     return visitChildren(ctx);
   }
 
@@ -194,5 +206,19 @@ class IdmsVisitor extends IdmsParserBaseVisitor<List<Node>> {
       newText = newText.substring(0, newText.length() - 1) + ".";
     }
     context.getExtendedDocument().replace(DialectUtils.constructRange(ctx), newText);
+  }
+
+  private void addReplacementImperativeStatementContext(
+      ParserRuleContext ctx, ImperativeStatementCallContext imperativeStatementCallContext) {
+    Range range =
+        new Range(
+            new Position(ctx.getStart().getLine() - 1, ctx.getStart().getCharPositionInLine()),
+            new Position(
+                imperativeStatementCallContext.getStart().getLine() - 1,
+                imperativeStatementCallContext.getStart().getCharPositionInLine()));
+    context.getExtendedDocument().clear(range);
+    context
+        .getExtendedDocument()
+        .replace(DialectUtils.constructRange(imperativeStatementCallContext), "IF 1 + 1 = 2");
   }
 }
