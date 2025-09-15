@@ -16,7 +16,7 @@ parser grammar IdmsParser;
 options {tokenVocab = IdmsLexer;  superClass = MessageServiceParser;}
 
 startRule: .*? idmsRules* EOF;
-idmsRules: (idmsStatements | idmsLRStatements | idmsSections | idmsIfStatement | ifStatement | copyIdmsStatement) .*?;
+idmsRules: (idmsStatements | obtainLRStatement | idmsSections | idmsIfStatement | ifStatement | copyIdmsStatement) .*?;
 
 idmsSections
    : idmsControlSection | schemaSection | mapSection
@@ -369,7 +369,11 @@ enqueueNameClause
 // erase statement
 
 eraseStatement
-   : ERASE idms_db_entity_name ((PERMANENT | SELECTIVE | ALL) MEMBERS)?
+   : ERASE  idms_db_entity_name
+     ( (PERMANENT | SELECTIVE | ALL) MEMBERS
+     | eraseStoreModifyLrStatementsOptions
+     |
+     )
    ;
 
 // find statement
@@ -660,7 +664,7 @@ idmsWaitNowaitClause
 
 // modify statement
 modifyStatement
-    : MODIFY  ((MAP modifyMapClause) | idms_db_entity_name )
+    : MODIFY  ((MAP modifyMapClause) | (idms_db_entity_name eraseStoreModifyLrStatementsOptions?))
     ;
 // modify map statement
 modifyMapClause
@@ -753,7 +757,7 @@ startpageStatement
 
 // store statement
 storeStatement
-    : STORE idms_db_entity_name
+    : STORE idms_db_entity_name eraseStoreModifyLrStatementsOptions?
     ;
 
 // transfer statement
@@ -1192,15 +1196,20 @@ cobolCompilerDirectivesKeywords
 endClause
     : (DOT_FS | SEMICOLON_FS)
     ;
-// --------- TOLERATE LR STATEMENTS ---------------//
-idmsLRStatements: obtainLRStatement;
-// obtain LR statement toleration
+
 obtainLRStatement
     : OBTAIN (FIRST|NEXT)? logicalRecordName
       (INTO altLogicalRecordLocation)?
       (WHERE booleanExpression)?
       imperativeStatementCall?
     ;
+
+eraseStoreModifyLrStatementsOptions
+    : FROM altLogicalRecordLocation (WHERE booleanExpression)? imperativeStatementCall?
+    | WHERE booleanExpression imperativeStatementCall?
+    | imperativeStatementCall
+ ;
+
 pathStatus: {validateLength(_input.LT(1).getText(), "path-status", 16);} cobolWord;
 imperativeStatementCall: ON pathStatus;
 booleanExpression: NOT? (comparison | logicalRecordField) ((AND | OR) NOT?  (comparison | logicalRecordField))*;
