@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp.cobol.common.AnalysisConfig;
 import org.eclipse.lsp.cobol.common.SqlProcessing;
 import org.eclipse.lsp.cobol.common.copybook.CopybookProcessingMode;
+import org.eclipse.lsp.cobol.common.error.ErrorSeverity;
 import org.eclipse.lsp.cobol.core.engine.dialects.DialectService;
 import org.eclipse.lsp.cobol.service.settings.CachingConfigurationService;
 import org.eclipse.lsp.cobol.service.settings.SettingsService;
@@ -83,6 +84,7 @@ class CachingConfigurationServiceTest {
             new JsonArray(),
             new JsonPrimitive("true"),
             new JsonArray(),
+            new JsonPrimitive("ERROR"),
             predefinedParagraphs);
 
     when(settingsService.fetchConfigurations(
@@ -94,13 +96,14 @@ class CachingConfigurationServiceTest {
                 DIALECT_REGISTRY.label,
                 SQL_PROCESSING_ENABLED_SETTING.label,
                 COMPILER_OPTIONS.label,
+                UNUSED_VARIABLE_SEVERITY.label,
                 "dialect")))
         .thenReturn(supplyAsync(() -> clientConfig));
 
     CachingConfigurationService configuration =
         new CachingConfigurationService(settingsService, dialectService);
 
-    assertEquals(
+    final AnalysisConfig expected =
         new AnalysisConfig(
             CopybookProcessingMode.DISABLED,
             ImmutableList.of("Dialect"),
@@ -108,8 +111,9 @@ class CachingConfigurationServiceTest {
             false,
             SqlProcessing.ENABLED,
             ImmutableList.of(),
-            ImmutableMap.of("dialect", predefinedParagraphs)),
-        configuration.getConfig("", CopybookProcessingMode.DISABLED));
+            ImmutableMap.of("dialect", predefinedParagraphs));
+    expected.getUnusedVariableSeverity().severity = ErrorSeverity.ERROR;
+    assertEquals(expected, configuration.getConfig("", CopybookProcessingMode.DISABLED));
   }
 
   @Test
@@ -131,6 +135,7 @@ class CachingConfigurationServiceTest {
             JsonNull.INSTANCE,
             new JsonArray(),
             JsonNull.INSTANCE,
+            JsonNull.INSTANCE,
             new JsonArray(),
             dialectsSettings);
     when(settingsService.fetchConfigurations(
@@ -142,6 +147,7 @@ class CachingConfigurationServiceTest {
                 DIALECT_REGISTRY.label,
                 SQL_PROCESSING_ENABLED_SETTING.label,
                 COMPILER_OPTIONS.label,
+                UNUSED_VARIABLE_SEVERITY.label,
                 "dialect")))
         .thenReturn(supplyAsync(() -> clientConfig));
 
