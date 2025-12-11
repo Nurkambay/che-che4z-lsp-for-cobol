@@ -29,4 +29,9 @@
            MOVE "1" TO FIELD_11_CBA.
            MOVE "1" TO FIELD_21_VVV OF SAMP1_ABC.
            MOVE "1" TO FIELD_21_VVV OF SAMP1_CBA.
+
+           VOID VAR1 THRU FINALIZE.
+           GOBACK.
+
+          FINALIZE.
            GOBACK.

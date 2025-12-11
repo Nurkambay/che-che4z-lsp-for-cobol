@@ -19,9 +19,12 @@ import com.google.inject.Provider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.*;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.lsp.cobol.common.CleanerPreprocessor;
 import org.eclipse.lsp.cobol.common.dialects.DialectProcessingContext;
 import org.eclipse.lsp.cobol.common.error.ErrorCode;
@@ -29,11 +32,15 @@ import org.eclipse.lsp.cobol.common.error.SyntaxError;
 import org.eclipse.lsp.cobol.common.mapping.ExtendedDocument;
 import org.eclipse.lsp.cobol.common.mapping.ExtendedText;
 import org.eclipse.lsp.cobol.common.model.Locality;
+import org.eclipse.lsp.cobol.common.model.tree.CodeBlockUsageNode;
 import org.eclipse.lsp.cobol.common.model.tree.CopyNode;
 import org.eclipse.lsp.cobol.common.model.tree.Node;
+import org.eclipse.lsp.cobol.common.model.tree.variable.VariableUsageNode;
 import org.eclipse.lsp.cobol.lsp.jrpc.*;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 /** Dialect Api Client * */
@@ -41,6 +48,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 @Singleton
 public class DialectProcessingService {
   private final Provider<CobolLanguageClient> cliendProvider;
+  private final Pattern referencePattern = Pattern.compile("\\{([^}]+)}");
 
   @Inject
   public DialectProcessingService(Provider<CobolLanguageClient> clientProvider) {
@@ -97,11 +105,12 @@ public class DialectProcessingService {
       List<SyntaxError> errorList,
       String dialectName,
       String copybookId) {
-    for (DocumentReplacement replacement : replacements) {
-      document.replace(replacement.getRange(), replacement.getText());
-    }
 
     List<Node> nodes = new ArrayList<>();
+    for (DocumentReplacement replacement : replacements) {
+      nodes.addAll(applyReplacement(document, replacement));
+    }
+
     for (DialectCopybookInfo copybookInfo : copybookInfos) {
       ExtendedText extendedText =
           preprocessor
@@ -136,6 +145,43 @@ public class DialectProcessingService {
       document.insertCopybook(
           copybookInfo.getStatementLocation().getRange(), copybook.getCurrentText());
     }
+    return nodes;
+  }
+
+  private List<Node> applyReplacement(ExtendedDocument document, DocumentReplacement replacement) {
+    List<Node> nodes = new ArrayList<>();
+    Matcher matcher = this.referencePattern.matcher(replacement.getText());
+    StringBuffer result = new StringBuffer();
+    List<Pair<Range, String>> replacements = new ArrayList<>();
+
+    while (matcher.find()) {
+      String dataName = matcher.group(1).substring(1);
+      String identifier = matcher.group(1).substring(1, 2);
+
+      // Range range = document.findInBaseRange(replacement.getRange(), dataName);
+      Range range = new Range(new Position(33, 16), new Position(33, 20));
+
+      if (range != null) {
+        if (identifier.equals("$")) {
+          Node node =
+              new VariableUsageNode(
+                  dataName, Locality.builder().uri(document.getUri()).range(range).build());
+          nodes.add(node);
+          replacements.add(new ImmutablePair<>(range, dataName));
+        } else if (identifier.equals("#")) {
+          Node node =
+              new CodeBlockUsageNode(
+                  Locality.builder().uri(document.getUri()).range(range).build(), dataName, null);
+          // nodes.add(node);
+        }
+        // replacements.add(new ImmutablePair<>(range, dataName));
+      }
+      matcher.appendReplacement(result, dataName);
+    }
+    matcher.appendTail(result);
+    document.replace(replacement.getRange(), result.toString());
+    replacements.forEach(r -> document.replace(r.getLeft(), r.getRight()));
+
     return nodes;
   }
 

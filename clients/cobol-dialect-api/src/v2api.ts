@@ -160,6 +160,6 @@ export interface IDocumentProcessingContext {
       }
     | undefined
   >;
-  replace(range: vscode.Range, text: string): void;
+  replace(range: vscode.Range, text: string, map?: string): void;
   addDiagnostic(diagnostic: vscode.Diagnostic): void;
 }

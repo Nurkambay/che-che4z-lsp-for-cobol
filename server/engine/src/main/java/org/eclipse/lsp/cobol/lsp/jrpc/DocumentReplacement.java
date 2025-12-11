@@ -23,4 +23,5 @@ import org.eclipse.lsp4j.Range;
 public class DocumentReplacement {
   @NonNull Range range;
   @NonNull String text;
+  String map;
 }

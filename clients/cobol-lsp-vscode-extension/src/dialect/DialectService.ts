@@ -41,8 +41,9 @@ type LocationPayload = {
 };
 
 type DocumentReplacementPayload = {
-  text: string;
   range: RangePayload;
+  text: string;
+  map?: string;
 };
 
 type CopybookPayload = {
@@ -74,6 +75,7 @@ type RelatedInformationPayload = {
 type DocumentReplacement = {
   range: vscode.Range;
   text: string;
+  map: string | undefined;
 };
 
 type CopybookInfo = {
@@ -142,11 +144,12 @@ class Context implements IDocumentProcessingContext {
     }
     return undefined;
   }
-  replace(range: vscode.Range, text: string): void {
+  replace(range: vscode.Range, text: string, map?: string): void {
     const location = new Location(this.documentUri, range);
     const replacement: DocumentReplacement = {
       range: location.range,
       text: text,
+      map: map,
     };
     this.replacements.push(replacement);
   }
@@ -347,7 +350,8 @@ function serializeReplacement(
   replacement: DocumentReplacement,
 ): DocumentReplacementPayload {
   return {
-    text: replacement.text,
     range: serializeRange(replacement.range),
+    text: replacement.text,
+    map: replacement.map,
   };
 }

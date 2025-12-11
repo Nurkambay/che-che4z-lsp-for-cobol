@@ -14,9 +14,9 @@
 
 import * as vscode from "vscode";
 import { getV2Api, IDocumentProcessingContext } from "@code4z/cobol-dialect-api";
+import { getChangers, TextChanger } from "./textchangers";
 
 const DIALECT_NAME = "SAMPLE";
-
 
 export async function activate(context: vscode.ExtensionContext) {
   const extensionId = context.extension.id;
@@ -69,12 +69,12 @@ async function handleProcessDialect(
   );
   for (let i = 0; i < lines.length; i++) {
     await processCopybook(
+      getChangers(),
       context,
       i,
       lines,
       programUri,
       outputChannel,
-      undefined,
     );
   }
   const endDate = new Date();
@@ -85,36 +85,8 @@ async function handleProcessDialect(
   );
 }
 
-function replace(
-  context: IDocumentProcessingContext,
-  line: number,
-  character: number,
-  text: string,
-) {
-  const range = new vscode.Range(
-    new vscode.Position(line, character),
-    new vscode.Position(line, character + text.length),
-  );
-
-  context.replace(range, text);
-}
-
-function replaceEx(
-  context: IDocumentProcessingContext,
-  line: number,
-  start: number,
-  end: number,
-  text: string,
-) {
-  const range = new vscode.Range(
-    new vscode.Position(line, start),
-    new vscode.Position(line, end),
-  );
-
-  context.replace(range, text);
-}
-
 async function processCopybook(
+  changers: TextChanger[],
   context: IDocumentProcessingContext,
   line: number,
   lines: string[],
@@ -122,35 +94,11 @@ async function processCopybook(
   outputChannel: vscode.OutputChannel,
   param?: string,
 ) {
-  let index = lines[line].indexOf(" AA ");
-  if (index > 0) {
-    replace(context, line, index, " 01 ");
+  for (const changer of changers) {
+    changer.apply(context, line, lines, param);
   }
 
-  index = lines[line].indexOf(" BB ");
-  if (index > 0) {
-    replace(context, line, index, " 05 ");
-  }
-
-  index = lines[line].indexOf(" SDATA");
-  if (index > 0) {
-    replaceEx(
-      context,
-      line,
-      index,
-      index + " SDATA".length,
-      " PIC X(9)",
-    );
-  }
-
-  if (param) {
-    index = lines[line].indexOf("XXX");
-    if (index > 0) {
-      replace(context, line, index, `${param}`);
-    }
-  }
-
-  index = lines[line].indexOf("COPY SAMPLE");
+  const index = lines[line].indexOf("COPY SAMPLE");
   if (index > 0) {
     const words = lines[line]
       .substring(index + "COPY SAMPLE".length)
@@ -197,6 +145,7 @@ async function processCopybook(
       const copyLines = copybookModel.text.split("\n");
       for (let i = 0; i < copyLines.length; i++) {
         await processCopybook(
+          changers,
           copybookModel.context,
           i,
           copyLines,
