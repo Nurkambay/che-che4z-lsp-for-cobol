@@ -99,3 +99,9 @@ export enum PUNCH_CARD {
   AREA_B_END_POS = 72,
   IDENTIFICATION_AREA_END_POS = 80,
 }
+
+export const ANALYSIS_LIMIT_REASON = {
+  code: "limited.analysis.complexity",
+  message: "Graph generation incomplete due to complexity of the program",
+  event: "ccf.analysis.limit",
+};

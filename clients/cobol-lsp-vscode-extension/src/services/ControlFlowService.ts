@@ -29,6 +29,7 @@ import { WorkerResultMessage } from "./worker/messages";
 import { GraphDTO } from "@code4z/analysis/lib/model/GraphDTO";
 import { telemetryEvent, telemetryExceptionEvent } from "./reporter";
 import { getVariablesFromUri } from "./util/FSUtils";
+import { ANALYSIS_LIMIT_REASON } from "../constants";
 
 const EVENT_ANALYSIS_ERROR = "ccf.analysis.error";
 
@@ -44,10 +45,16 @@ export type ApiResult = {
   documentUri: string;
 };
 
+type IncompleteReason = {
+  code: string;
+  message: string;
+};
+
 export type AnalysisResult = {
   documentUri: string;
   graphs: GraphDTO[];
   locations: string[];
+  incomplete?: IncompleteReason;
 };
 
 interface AnalysisServiceDelegate {
@@ -301,6 +308,7 @@ export class ControlFlowAnalysisService implements AnalysisServiceDelegate {
         documentUri: documentUri,
         graphs: graphs,
         locations: locations,
+        incomplete: getIncompleteReason(events),
       };
       if (result.resolve) result.resolve(resultObject);
       else result.promise = Promise.resolve(resultObject);
@@ -433,6 +441,21 @@ const severityTranslation: vscode.DiagnosticSeverity[] = [
   vscode.DiagnosticSeverity.Information,
   vscode.DiagnosticSeverity.Hint,
 ];
+
+function getIncompleteReason(events: EventDto[]): IncompleteReason | undefined {
+  if (
+    events.some(
+      (event) =>
+        "eventName" in event && event.eventName === ANALYSIS_LIMIT_REASON.event,
+    )
+  ) {
+    return {
+      code: ANALYSIS_LIMIT_REASON.code,
+      message: ANALYSIS_LIMIT_REASON.message,
+    };
+  }
+  return undefined;
+}
 
 function asRange(r: RangeDto): vscode.Range {
   return new vscode.Range(
