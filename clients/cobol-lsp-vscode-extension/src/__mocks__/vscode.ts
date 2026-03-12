@@ -64,6 +64,18 @@ export const diagnosticsCollectionMock = {
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace workspace {
   export const workspaceFolders = workspaceFoldersMock;
+
+  export function registerFileSystemProvider(
+    _scheme: string,
+    _provider: unknown,
+    _options?: {
+      readonly isCaseSensitive?: boolean;
+      readonly isReadonly?: boolean;
+    },
+  ): Disposable {
+    return new Disposable();
+  }
+
   export function getConfiguration() {
     return {
       get: (key: string) => {
@@ -331,6 +343,9 @@ export const FileSystemError = {
   FileNotFound: () => {
     return new FileNotFound();
   },
+  NoPermissions: () => {
+    return new Error("No Permission");
+  },
 };
 
 export const RelativePattern = jest
@@ -361,4 +376,45 @@ export enum FileType {
   File = 1,
   Directory = 2,
   SymbolicLink = 64,
+}
+
+export class Disposable {
+  /**
+   * Creates a new Disposable calling the provided function
+   * on dispose.
+   * @param callOnDispose Function that disposes something.
+   */
+  // eslint-disable-next-line
+  constructor(private callOnDispose?: Function) {}
+  /**
+   * Dispose this object.
+   */
+  // eslint-disable-next-line
+  public dispose(): any {
+    this.callOnDispose?.();
+  }
+}
+
+export class EventEmitter<T> {
+  event: Event<T>;
+  constructor() {
+    this.event = () => {};
+  }
+  fire(data: T) {
+    this.event(() => data);
+  }
+  dispose() {}
+}
+export interface Event<T> {
+  (
+    listener: (e: T) => unknown,
+    thisArgs?: unknown,
+    disposables?: unknown[],
+  ): unknown;
+}
+
+export enum FileChangeType {
+  Changed = 1,
+  Created = 2,
+  Deleted = 3,
 }

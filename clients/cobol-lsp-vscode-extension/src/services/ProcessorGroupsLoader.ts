@@ -16,7 +16,7 @@ import { workspace, Uri } from "vscode";
 import { PathReporter } from "io-ts/lib/PathReporter";
 import { isLeft } from "fp-ts/Either";
 import { TextDecoder } from "util";
-import { asArray, hasMember } from "./util/Utils";
+import { asArray, extractTarPath, hasMember, isTarPath } from "./util/Utils";
 import LocalPathLib from "./copybookLibs/LocalPathLib";
 import { UssPathLib } from "./copybookLibs/UssPathLib";
 import { DatasetLib } from "./copybookLibs/DatasetLib";
@@ -27,6 +27,7 @@ import CopybookLib from "./copybookLibs/CopybookLib";
 import { SettingsService } from "./Settings";
 import { Memoize } from "./util/Memoize";
 import { outputChannel } from "./util/OutputChannel";
+import { TarCopybookLib } from "./copybookLibs/TarCopybookLib";
 
 const PG_FOLDER = ".cobolplugin";
 const PGR_PGM_FILE = "pgm_conf.json";
@@ -100,12 +101,31 @@ const ZoweUssConfigModel = t.intersection([
 ]);
 export type ZoweUssConfigModel = t.TypeOf<typeof ZoweUssConfigModel>;
 
+const TarConfigDSNandUSSModel = t.intersection([
+  t.type({
+    locationType: t.union([t.literal("DSN"), t.literal("USS")]),
+    tarFileLocation: t.string,
+  }),
+  t.partial({ profile: t.string, folderPattern: t.string }),
+]);
+const TarConfigLocalModel = t.intersection([
+  t.type({
+    locationType: t.literal("local"),
+    tarFileLocation: t.string,
+  }),
+  t.partial({ folderPattern: t.string }),
+]);
+
+const TarConfigModel = t.union([TarConfigLocalModel, TarConfigDSNandUSSModel]);
+export type TarConfigModel = t.TypeOf<typeof TarConfigModel>;
+
 const LibModel = t.union([
   t.string,
   EndevorConfigModel,
   EndevorDatasetModel,
   ZoweDatasetConfigModel,
   ZoweUssConfigModel,
+  TarConfigModel,
 ]);
 const LibsModel = t.array(LibModel);
 export type LibDefinition = t.TypeOf<typeof LibModel>;
@@ -158,7 +178,8 @@ export type CopybookLibTypes =
   | typeof DatasetLib
   | typeof UssPathLib
   | typeof EndevorElementLib
-  | typeof EndevorMemberLib;
+  | typeof EndevorMemberLib
+  | typeof TarCopybookLib;
 
 const readEndevorConfigCached = new Memoize(
   async function (documentUri: Uri): Promise<WorkspaceConfig | undefined> {
@@ -244,23 +265,54 @@ export const readWorkspaceConfig = readWorkspaceConfigCached.execute;
 
 export function readSettingConfig(dialectType: string): ProcessorGroup {
   // local paths
-  const directoryPaths = SettingsService.getLocalPath(dialectType);
+  const directoryPaths = SettingsService.getLocalPath(dialectType).map(
+    (localPath) => {
+      if (isTarPath(localPath)) {
+        const { tarPath, internalPath } = extractTarPath(localPath);
+        return TarConfigLocalModel.encode({
+          locationType: "local",
+          tarFileLocation: tarPath,
+          folderPattern: internalPath,
+        });
+      }
+      return localPath;
+    },
+  );
 
   // dsn
   const dsns: LibsDefinitions = SettingsService.getDsnPath(dialectType).map(
-    (dsn) => ({ dataset: dsn }),
+    (dsn) => {
+      if (isTarPath(dsn)) {
+        const { tarPath, internalPath } = extractTarPath(dsn);
+        return {
+          locationType: "DSN",
+          tarFileLocation: tarPath,
+          folderPattern: internalPath,
+        };
+      }
+      return { dataset: dsn };
+    },
   );
 
   // uss
   const usss: LibsDefinitions = SettingsService.getUssPath(dialectType).map(
-    (uss) => ({ uss }),
+    (uss) => {
+      if (isTarPath(uss)) {
+        const { tarPath, internalPath } = extractTarPath(uss);
+        return {
+          locationType: "USS",
+          tarFileLocation: tarPath,
+          folderPattern: internalPath,
+        };
+      }
+      return uss;
+    },
   );
-
   return {
     name: "VSCodeSettingProcessorGroup",
     libs: transformLibs(
       [...directoryPaths, ...dsns, ...usss],
-      [LocalPathLib, DatasetLib, UssPathLib],
+      [LocalPathLib, DatasetLib, UssPathLib, TarCopybookLib],
       [],
     ),
   };
@@ -298,6 +350,7 @@ async function readProcessorGroupsFile(
         DatasetLib,
         UssPathLib,
         EndevorElementLib,
+        TarCopybookLib,
       ]),
     );
   } catch (e) {
