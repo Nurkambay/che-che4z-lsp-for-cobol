@@ -96,6 +96,7 @@ class CobolTextDocumentServiceTest {
             subroutineService,
             communications,
             null,
+            null,
             clientProvider);
 
     CompletionHandler completionHandler =

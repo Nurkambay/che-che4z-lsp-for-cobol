@@ -30,6 +30,8 @@ import org.eclipse.lsp.cobol.common.message.MessageService;
 import org.eclipse.lsp.cobol.core.engine.CobolLanguageEngine;
 import org.eclipse.lsp.cobol.core.messages.LocaleStoreImpl;
 import org.eclipse.lsp.cobol.core.messages.PropertiesMessageService;
+import org.eclipse.lsp.cobol.core.model.extendedapi.ast.ASTExporter;
+import org.eclipse.lsp.cobol.core.model.extendedapi.ast.ASTExporterImpl;
 import org.eclipse.lsp.cobol.core.preprocessor.delegates.GrammarPreprocessor;
 import org.eclipse.lsp.cobol.core.preprocessor.delegates.GrammarPreprocessorImpl;
 import org.eclipse.lsp.cobol.core.preprocessor.delegates.copybooks.GrammarPreprocessorListenerFactory;
@@ -68,6 +70,7 @@ public class EngineModule extends AbstractModule {
     bind(CopybookNameService.class).to(CopybookNameServiceImpl.class);
     bind(LspEventConsumer.class).to(CobolWorkspaceServiceImpl.class);
     bind(CFASTBuilder.class).to(CFASTBuilderImpl.class);
+    bind(ASTExporter.class).to(ASTExporterImpl.class);
 
     bind(String.class)
         .annotatedWith(named("resourceFileLocation"))

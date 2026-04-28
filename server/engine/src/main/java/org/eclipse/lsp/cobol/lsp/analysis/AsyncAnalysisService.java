@@ -31,6 +31,9 @@ import org.eclipse.lsp.cobol.common.dialects.CobolLanguageId;
 import org.eclipse.lsp.cobol.common.dialects.TrueDialectService;
 import org.eclipse.lsp.cobol.core.model.extendedapi.ExtendedApiResult;
 import org.eclipse.lsp.cobol.core.model.extendedapi.Program;
+import org.eclipse.lsp.cobol.core.model.extendedapi.ast.ASTExporter;
+import org.eclipse.lsp.cobol.core.model.extendedapi.ast.ASTProgram;
+import org.eclipse.lsp.cobol.core.model.extendedapi.ast.ExtendedApiAstResult;
 import org.eclipse.lsp.cobol.lsp.LspEventCancelCondition;
 import org.eclipse.lsp.cobol.lsp.LspEventDependency;
 import org.eclipse.lsp.cobol.lsp.SourceUnitGraph;
@@ -56,6 +59,7 @@ public class AsyncAnalysisService implements AnalysisStateNotifier {
   private final SourceUnitGraph sourceUnitGraph;
 
   private final CFASTBuilder cfastBuilder;
+  private final ASTExporter astExporter;
   private final Provider<CobolLanguageClient> clientProvider;
 
   private final Map<String, FutureTask<CobolDocumentModel>> analysisResults =
@@ -86,6 +90,7 @@ public class AsyncAnalysisService implements AnalysisStateNotifier {
       SubroutineService subroutineService,
       Communications communications,
       @Nullable CFASTBuilder cfastBuilder,
+      @Nullable ASTExporter astExporter,
       Provider<CobolLanguageClient> clientProvider) {
     this.dialectService = dialectService;
     this.documentModelService = documentModelService;
@@ -97,6 +102,7 @@ public class AsyncAnalysisService implements AnalysisStateNotifier {
     this.sourceUnitGraph = sourceUnitGraph;
     this.analysisStateListeners.add(sourceUnitGraph);
     this.cfastBuilder = cfastBuilder;
+    this.astExporter = astExporter;
     this.clientProvider = clientProvider;
   }
 
@@ -135,6 +141,11 @@ public class AsyncAnalysisService implements AnalysisStateNotifier {
     return futureTask;
   }
 
+  private void postResults(String uri, AnalysisResult result) {
+    postCFASTResults(uri, result);
+    postASTResults(uri, result);
+  }
+
   private void postCFASTResults(String uri, AnalysisResult result) {
     if (cfastBuilder == null) return;
 
@@ -145,6 +156,17 @@ public class AsyncAnalysisService implements AnalysisStateNotifier {
             .collect(Collectors.toList());
 
     this.clientProvider.get().cfastReady(new ExtendedApiResult(astList, uri));
+  }
+
+  private void postASTResults(final String uri, final AnalysisResult result) {
+    if (astExporter == null) return;
+
+    List<ASTProgram> astList =
+        result.getRootNode().findPrograms().stream()
+            .map(astExporter::export)
+            .collect(Collectors.toList());
+
+    this.clientProvider.get().astReady(new ExtendedApiAstResult(astList, uri));
   }
 
   private Callable<CobolDocumentModel> scheduleAnalysis(
@@ -178,7 +200,7 @@ public class AsyncAnalysisService implements AnalysisStateNotifier {
 
         if (result != null) {
           newDocumentModel = documentModelService.processAnalysisResult(uri, result, text);
-          postCFASTResults(uri, result);
+          postResults(uri, result);
         }
 
         notifyAllListeners(AnalysisState.COMPLETED, newDocumentModel);

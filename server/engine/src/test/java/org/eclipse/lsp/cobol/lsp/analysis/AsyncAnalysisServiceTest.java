@@ -62,6 +62,7 @@ class AsyncAnalysisServiceTest {
             subroutineService,
             communication,
             null,
+            null,
             clientProvider);
   }
 

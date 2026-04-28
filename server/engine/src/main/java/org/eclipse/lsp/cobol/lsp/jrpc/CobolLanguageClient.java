@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp.cobol.common.copybook.CopyBookDTO;
 import org.eclipse.lsp.cobol.core.model.extendedapi.ExtendedApiResult;
+import org.eclipse.lsp.cobol.core.model.extendedapi.ast.ExtendedApiAstResult;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageClient;
@@ -84,6 +85,16 @@ public interface CobolLanguageClient extends LanguageClient, DialectClientApi {
    */
   @JsonNotification("cfast/ready")
   default void cfastReady(ExtendedApiResult result) {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Notifies language client that AST is ready
+   *
+   * @param result is a result with AST data
+   */
+  @JsonNotification("ast/ready")
+  default void astReady(ExtendedApiAstResult result) {
     throw new UnsupportedOperationException();
   }
 }
