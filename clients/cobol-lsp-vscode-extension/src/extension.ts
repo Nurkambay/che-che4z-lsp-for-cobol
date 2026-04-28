@@ -81,6 +81,7 @@ import { createSampleConfiguration } from "./commands/CreateSampleConfiguration"
 import { RENUM_LEFT, RENUM_RIGHT, RenumHandler } from "./commands/RenumCommand";
 import { TarCopybookFileSystemProvider } from "./provider/TarCopybookFileSystemProvider";
 import { getTarCached } from "./services/util/TarUtil";
+import { Linter } from "./services/Linter";
 
 interface __AnalysisApi {
   analysis(uri: string, text: string, pos?: vscode.Position): Promise<unknown>;
@@ -154,6 +155,18 @@ export async function activate(
   languageClientService.addNotificationHandler(
     "cfast/ready",
     analysisService.makeControlFlowAstNotificationHandler(),
+  );
+
+  const linter = new Linter(
+    outputChannel,
+    vscode.window.createOutputChannel("COBOL Language Support Linter", {
+      log: true,
+    }),
+  );
+  context.subscriptions.push(linter);
+  languageClientService.addNotificationHandler(
+    "ast/ready",
+    linter.makeAstNotificationHandler(),
   );
 
   DialectRegistry.clear();

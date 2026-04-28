@@ -250,6 +250,8 @@ public class ASTExporterImpl implements ASTExporter {
         break;
       case XML_GENERATE:
         break;
+      default:
+        astNode = new ASTNode(node.getNodeType().name(), convertLocation(node));
     }
     if (astNode == null) {
       astNode = new ASTNode(node.getNodeType().name(), convertLocation(node));
