@@ -18,11 +18,41 @@ import * as path from "node:path";
 import { SETTINGS_UNREACHABLE_CODE_SEVERITY } from "../constants";
 import { outputChannel } from "./util/OutputChannel";
 
-export type ASTNodeType = "PROGRAM" | "PARAGRAPH";
+export type ASTNodeType =
+  | "PROGRAM"
+  | "AT_END"
+  | "CODE_BLOCK_PARENT"
+  | "CODE_BLOCK_USAGE"
+  | "COMPILER_DIRECTIVE"
+  | "COPY"
+  | "EVALUATE"
+  | "EVALUATE_WHEN"
+  | "EVALUATE_WHEN_OTHER"
+  | "EXEC_CICS_ABEND"
+  | "EXIT"
+  | "EXIT_SECTION"
+  | "EXIT_PARAGRAPH"
+  | "EXIT_PERFORM"
+  | "GO_BACK"
+  | "GO_TO"
+  | "IF"
+  | "IF_ELSE"
+  | "ON_EXCEPTION"
+  | "PARAGRAPH"
+  | "PARAGRAPH_NAME"
+  | "PERFORM"
+  | "QUALIFIED_REFERENCE_NODE"
+  | "SECTION"
+  | "SECTION_NAME_NODE"
+  | "SUBROUTINE"
+  | "SUBROUTINE_NAME"
+  | "VARIABLE_DEFINITION"
+  | "VARIABLE_DEFINITION_NAME"
+  | "VARIABLE_USAGE";
 
 export type ApiAstResult = {
   astList: ASTProgram[];
-  url: string;
+  uri: string;
 };
 
 export type Position = {
@@ -55,7 +85,7 @@ export type ASTProgram = ASTNode & {
 
 export type RuleDiagnostic = {
   message: string;
-  range: Range;
+  location: Location;
   severity: vscode.DiagnosticSeverity;
   source?: string;
 };
@@ -74,13 +104,19 @@ export class Rule {
     const diagnostics = this.rule.run(ast, context) || [];
 
     diagnostics.forEach((d) => {
-      d.source = name;
+      d.source = this.name;
     });
     return diagnostics.map((d) => {
       return new vscode.Diagnostic(
         new vscode.Range(
-          new vscode.Position(d.range.start.line, d.range.start.character),
-          new vscode.Position(d.range.end.line, d.range.end.character),
+          new vscode.Position(
+            d.location.start.line - 1,
+            d.location.start.character - 1,
+          ),
+          new vscode.Position(
+            d.location.end.line - 1,
+            d.location.end.character - 1,
+          ),
         ),
         d.message,
         d.severity,
@@ -123,7 +159,7 @@ export class Linter implements vscode.Disposable {
 
   execute(result: ApiAstResult) {
     this.logChannel?.debug("Handle AST from backend");
-    if (result.url) {
+    if (result.uri) {
       const context: RuleContext = {
         visit(node: ASTNode, visitor: (node: ASTNode) => void) {
           visitor(node);
@@ -138,7 +174,7 @@ export class Linter implements vscode.Disposable {
       });
 
       this.diagnosticService.showDiagnostics(
-        vscode.Uri.parse(result.url),
+        vscode.Uri.parse(result.uri),
         diagnostics,
       );
     }

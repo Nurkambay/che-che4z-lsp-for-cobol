@@ -29,7 +29,7 @@ public class ASTVariableDefinitionName extends ASTNode {
 
   public ASTVariableDefinitionName(
       Location location, String name, List<Location> definition, List<Location> usages) {
-    super("SECTION_NAME", location);
+    super("VARIABLE_DEFINITION_NAME", location);
     this.name = name;
     this.definitions = definition;
     this.usages = usages;

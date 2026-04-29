@@ -14,6 +14,7 @@
  */
 package org.eclipse.lsp.cobol.core.model.extendedapi.ast;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 import org.eclipse.lsp.cobol.core.model.extendedapi.Location;
@@ -28,5 +29,6 @@ public class ASTNode {
   public ASTNode(String type, Location location) {
     this.type = type;
     this.location = location;
+    this.children = new ArrayList<>();
   }
 }

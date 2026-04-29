@@ -29,7 +29,7 @@ public class ASTVariableUsage extends ASTNode {
 
   public ASTVariableUsage(
       Location location, String name, List<Location> definition, List<Location> usages) {
-    super("SECTION_NAME", location);
+    super("VARIABLE_USAGE", location);
     this.name = name;
     this.definitions = definition;
     this.usages = usages;
