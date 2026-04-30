@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import org.eclipse.lsp.cobol.common.model.tree.*;
 import org.eclipse.lsp.cobol.common.model.tree.variable.VariableDefinitionNameNode;
 import org.eclipse.lsp.cobol.common.model.tree.variable.VariableUsageNode;
+import org.eclipse.lsp.cobol.common.model.tree.variable.VariableWithLevelNode;
 import org.eclipse.lsp.cobol.core.model.extendedapi.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
@@ -215,6 +216,23 @@ public class ASTExporterImpl implements ASTExporter {
                     .collect(Collectors.toList()));
         break;
       case VARIABLE:
+        if (node instanceof VariableWithLevelNode) {
+          VariableWithLevelNode variableNode = (VariableWithLevelNode) node;
+          astNode =
+              new ASTVariableDefinition(
+                  convertLocation(node),
+                  variableNode.getName(),
+                  variableNode.getLevel(),
+                  variableNode.isRedefines(),
+                  variableNode.isSpecifiedGlobal(),
+                  variableNode.getVariableType(),
+                  variableNode.getDefinitions().stream()
+                      .map(this::convertLocation)
+                      .collect(Collectors.toList()),
+                  variableNode.getUsages().stream()
+                      .map(this::convertLocation)
+                      .collect(Collectors.toList()));
+        }
         break;
       case VARIABLE_DEFINITION:
         break;

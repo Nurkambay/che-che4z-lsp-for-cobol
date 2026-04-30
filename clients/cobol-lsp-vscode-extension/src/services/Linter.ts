@@ -230,7 +230,7 @@ export class Linter implements vscode.Disposable {
         allDiagnostics.push(...diagnostics);
       } catch (e) {
         outputChannel?.appendLine(
-          `Rule ${rule.name} failed: ${JSON.stringify(e)}`,
+          `Rule ${rule.name} failed: error: ${(e as Error).message}`,
         );
       }
     }
