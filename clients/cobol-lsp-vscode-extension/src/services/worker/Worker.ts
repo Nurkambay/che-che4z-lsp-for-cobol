@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *   Broadcom, Inc. - initial API and implementation
+ *   Broadcom - initial API and implementation
  */
 import { parentPort } from "worker_threads";
 import { ControlFlowGraphBuilder } from "@code4z/analysis/lib/graphbuilder";

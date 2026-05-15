@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *   Broadcom, Inc. - initial API and implementation
+ *   Broadcom - initial API and implementation
  */
 import { COPYBOOKS_FOLDER, E4E_FOLDER, ZOWE_FOLDER } from "../../constants";
 import { EndevorType, ResolvedProfile } from "../../type/e4eApi.d";
