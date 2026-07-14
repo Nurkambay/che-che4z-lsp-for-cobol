@@ -48,10 +48,9 @@ export class CopybookModifier {
 
   public async execute(
     context: IDocumentProcessingContext,
-    text: string,
     descriptors: CopybookDescriptor[],
     variableAccumulator: VariableAccumulator,
-  ) {
+  ): Promise<VariableDescriptor[]> {
     descriptors.forEach((descriptor) =>
       console.log(
         `Descriptor: name=${descriptor.name}, level=${descriptor.level}, suffix=${descriptor.suffix}, parentName=${descriptor.parentName}`,
@@ -118,6 +117,9 @@ export class CopybookModifier {
         variableAccumulator.insertCopybookVariables(descriptor, variables);
       }
     }
+    return variableAccumulator
+      .generateDescriptors()
+      .filter((d): d is VariableDescriptor => !!d && "type" in d);
   }
 
   private validateMissingSuffix(

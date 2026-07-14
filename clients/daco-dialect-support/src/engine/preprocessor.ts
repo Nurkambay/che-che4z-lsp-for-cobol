@@ -41,7 +41,6 @@ import {
   CopybookDescriptor,
   CopybookDescriptorPD,
   VariableAccumulator,
-  VariableDescriptor,
 } from "./model";
 import { ProgramParserVisitor } from "../generated/ProgramParserVisitor";
 
@@ -80,26 +79,14 @@ export class DaCoPreprocessor {
   ) {
     text = this.cleanup(context, text);
 
-    const variableAccumulator = new VariableAccumulator();
-    const programInfoAccumulator = new ProgramInfoAccumulator();
+    const { descriptors, variableAccumulator, programInfoAccumulator } =
+      this.collectCopybookDescriptors(context, text);
 
-    const descriptors = this.collectCopybookDescriptors(
+    const variables = await this.copybookModifier.execute(
       context,
-      text,
-      variableAccumulator,
-      programInfoAccumulator,
-    );
-
-    await this.copybookModifier.execute(
-      context,
-      text,
       descriptors,
       variableAccumulator,
     );
-
-    const variables = variableAccumulator
-      .generateDescriptors()
-      .filter((d): d is VariableDescriptor => !!d && "type" in d);
 
     processCopyFrom(context, variables, this.messageService);
     generatePredefinedSections(
@@ -171,9 +158,11 @@ export class DaCoPreprocessor {
   private collectCopybookDescriptors(
     context: IDocumentProcessingContext,
     text: string,
-    variableAccumulator: VariableAccumulator,
-    programInfoAccumulator: ProgramInfoAccumulator,
-  ): CopybookDescriptor[] {
+  ): {
+    descriptors: CopybookDescriptor[];
+    variableAccumulator: VariableAccumulator;
+    programInfoAccumulator: ProgramInfoAccumulator;
+  } {
     const charStream = antlr.CharStream.fromString(text);
 
     const lexer = new ProgramLexer(charStream);
@@ -191,6 +180,10 @@ export class DaCoPreprocessor {
     parser.addErrorListener(parserErrors);
 
     const tree = parser.startRule();
+
+    const variableAccumulator = new VariableAccumulator();
+    const programInfoAccumulator = new ProgramInfoAccumulator();
+
     const visitor = new ProgramVisitor(
       variableAccumulator,
       programInfoAccumulator,
@@ -205,7 +198,7 @@ export class DaCoPreprocessor {
     addParsingErrors(context, [...lexerErrors.errors, ...parserErrors.errors]);
 
     console.log(`Found ${descriptors.length} copybook descriptors:`);
-    return descriptors;
+    return { descriptors, variableAccumulator, programInfoAccumulator };
   }
 }
 
