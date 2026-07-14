@@ -40,6 +40,7 @@ import {
   CollectingErrorListener,
   CopybookDescriptor,
   CopybookDescriptorPD,
+  ParseError,
   VariableAccumulator,
 } from "./model";
 import { ProgramParserVisitor } from "../generated/ProgramParserVisitor";
@@ -73,13 +74,13 @@ export class DaCoPreprocessor {
   ) {
     text = this.cleanup(context, text);
 
-    const { descriptors, variableAccumulator, programInfo } =
-      this.collectCopybookDescriptors(context, text);
+    const { programInfo, errors } = this.analyzeProgram(text);
+    addParsingErrors(context, errors);
 
     const variables = await this.copybookModifier.execute(
       context,
-      descriptors,
-      variableAccumulator,
+      programInfo.copybooks,
+      programInfo.variableAccumulator,
     );
 
     processCopyFrom(context, variables, this.messageService);
@@ -149,13 +150,9 @@ export class DaCoPreprocessor {
     };
   }
 
-  private collectCopybookDescriptors(
-    context: IDocumentProcessingContext,
-    text: string,
-  ): {
-    descriptors: CopybookDescriptor[];
-    variableAccumulator: VariableAccumulator;
+  private analyzeProgram(text: string): {
     programInfo: ProgramInfo;
+    errors: ParseError[];
   } {
     const charStream = antlr.CharStream.fromString(text);
 
@@ -175,25 +172,19 @@ export class DaCoPreprocessor {
 
     const tree = parser.startRule();
 
-    const variableAccumulator = new VariableAccumulator();
-
-    const visitor = new ProgramVisitor(
-      variableAccumulator,
-      this.messageService,
-    );
-    const descriptors = visitor.visit(tree) || [];
+    const visitor = new ProgramVisitor(this.messageService);
+    const copybooks = visitor.visit(tree) || [];
+    const programInfo = visitor.programInfo;
+    programInfo.copybooks = copybooks;
 
     this.outputChannel.appendLine(
       `Parsing completed with ${lexerErrors.errors.length} lexer errors and ${parserErrors.errors.length} parser errors`,
     );
 
-    addParsingErrors(context, [...lexerErrors.errors, ...parserErrors.errors]);
-
-    console.log(`Found ${descriptors.length} copybook descriptors:`);
+    console.log(`Found ${copybooks.length} copybook descriptors:`);
     return {
-      descriptors,
-      variableAccumulator,
-      programInfo: visitor.programInfo,
+      programInfo,
+      errors: [...lexerErrors.errors, ...parserErrors.errors],
     };
   }
 }
@@ -239,16 +230,15 @@ class ProgramInfo {
   public readonly sections: string[] = [];
   public procedureDivisionNameStart?: number;
   public procedureDivisionNameEnd?: number;
+  public variableAccumulator: VariableAccumulator = new VariableAccumulator();
+  public copybooks: CopybookDescriptor[] = [];
 }
 
 export class ProgramVisitor extends ProgramParserVisitor<CopybookDescriptor[]> {
   public readonly programInfo: ProgramInfo = new ProgramInfo();
   private readonly parentNameResolver: NameResolver = new NameResolver();
 
-  public constructor(
-    private readonly variableAccumulator: VariableAccumulator,
-    private readonly messageService: MessageService,
-  ) {
+  public constructor(private readonly messageService: MessageService) {
     super();
   }
 
@@ -307,7 +297,7 @@ export class ProgramVisitor extends ProgramParserVisitor<CopybookDescriptor[]> {
       parentInfo?.name,
       parentInfo?.range,
     );
-    this.variableAccumulator.addCopybookPlaceholder(descriptor);
+    this.programInfo.variableAccumulator.addCopybookPlaceholder(descriptor);
 
     return [descriptor, ...(super.visitChildren(ctx) ?? [])];
   };
@@ -329,7 +319,7 @@ export class ProgramVisitor extends ProgramParserVisitor<CopybookDescriptor[]> {
 
       if (parsed.kind === "COPY_FROM") {
         const copyFromRange = constructRange(ctx.variableOptionEntry());
-        this.variableAccumulator.add({
+        this.programInfo.variableAccumulator.add({
           levelRange: constructRangeFromTokens(
             ctx.LEVEL_NUMBER().getSymbol(),
             ctx.LEVEL_NUMBER().getSymbol(),
@@ -342,7 +332,7 @@ export class ProgramVisitor extends ProgramParserVisitor<CopybookDescriptor[]> {
           type: "COPY-FROM",
         });
       } else {
-        this.variableAccumulator.add({
+        this.programInfo.variableAccumulator.add({
           levelRange: constructRangeFromTokens(
             ctx.LEVEL_NUMBER().getSymbol(),
             ctx.LEVEL_NUMBER().getSymbol(),

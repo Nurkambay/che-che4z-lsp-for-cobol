@@ -21,7 +21,6 @@ import {
 } from "../../../engine/preprocessor";
 import { createMessageService } from "./utils";
 import { SettingsService } from "../../../engine/services/settings";
-import { VariableAccumulator } from "../../../engine/model";
 
 describe("DaCoPreprocessor test", () => {
   const HEADER_0 =
@@ -70,10 +69,7 @@ describe("DaCoPreprocessor test", () => {
   });
 
   it("should fallback when layoutId is missing", () => {
-    const visitor = new ProgramVisitor(
-      new VariableAccumulator(),
-      createMessageService(),
-    );
+    const visitor = new ProgramVisitor(createMessageService());
 
     const ctx = {
       layoutId: () => null,
@@ -86,10 +82,7 @@ describe("DaCoPreprocessor test", () => {
   });
 
   it("should fallback when DACO_COPYBOOK_IDENTIFIER is missing", () => {
-    const visitor = new ProgramVisitor(
-      new VariableAccumulator(),
-      createMessageService(),
-    );
+    const visitor = new ProgramVisitor(createMessageService());
 
     const ctx = {
       DACO_COPYBOOK_IDENTIFIER: () => null,
