@@ -17,7 +17,6 @@ import { Range } from "./__mocks__/vscode";
 import {
   DaCoPreprocessor,
   NameResolver,
-  ProgramInfoAccumulator,
   ProgramVisitor,
 } from "../../../engine/preprocessor";
 import { createMessageService } from "./utils";
@@ -73,7 +72,6 @@ describe("DaCoPreprocessor test", () => {
   it("should fallback when layoutId is missing", () => {
     const visitor = new ProgramVisitor(
       new VariableAccumulator(),
-      new ProgramInfoAccumulator(),
       createMessageService(),
     );
 
@@ -90,7 +88,6 @@ describe("DaCoPreprocessor test", () => {
   it("should fallback when DACO_COPYBOOK_IDENTIFIER is missing", () => {
     const visitor = new ProgramVisitor(
       new VariableAccumulator(),
-      new ProgramInfoAccumulator(),
       createMessageService(),
     );
 

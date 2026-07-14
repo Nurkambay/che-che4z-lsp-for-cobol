@@ -48,12 +48,6 @@ type CopyFromOptions =
   | { kind: "COPY_FROM"; suffix: string }
   | { kind: "REGULAR_OPTIONS"; options: string };
 
-export class ProgramInfoAccumulator {
-  public readonly sections: string[] = [];
-  public procedureDivisionNameStart?: number;
-  public procedureDivisionNameEnd?: number;
-}
-
 export class DaCoPreprocessor {
   private readonly copybookModifier: CopybookModifier;
   private readonly statementsModifier: StatementsModifier;
@@ -79,7 +73,7 @@ export class DaCoPreprocessor {
   ) {
     text = this.cleanup(context, text);
 
-    const { descriptors, variableAccumulator, programInfoAccumulator } =
+    const { descriptors, variableAccumulator, programInfo } =
       this.collectCopybookDescriptors(context, text);
 
     const variables = await this.copybookModifier.execute(
@@ -91,8 +85,8 @@ export class DaCoPreprocessor {
     processCopyFrom(context, variables, this.messageService);
     generatePredefinedSections(
       context,
-      programInfoAccumulator.sections,
-      programInfoAccumulator.procedureDivisionNameEnd,
+      programInfo.sections,
+      programInfo.procedureDivisionNameEnd,
     );
 
     this.statementsModifier.execute(context, text);
@@ -161,7 +155,7 @@ export class DaCoPreprocessor {
   ): {
     descriptors: CopybookDescriptor[];
     variableAccumulator: VariableAccumulator;
-    programInfoAccumulator: ProgramInfoAccumulator;
+    programInfo: ProgramInfo;
   } {
     const charStream = antlr.CharStream.fromString(text);
 
@@ -182,11 +176,9 @@ export class DaCoPreprocessor {
     const tree = parser.startRule();
 
     const variableAccumulator = new VariableAccumulator();
-    const programInfoAccumulator = new ProgramInfoAccumulator();
 
     const visitor = new ProgramVisitor(
       variableAccumulator,
-      programInfoAccumulator,
       this.messageService,
     );
     const descriptors = visitor.visit(tree) || [];
@@ -198,7 +190,11 @@ export class DaCoPreprocessor {
     addParsingErrors(context, [...lexerErrors.errors, ...parserErrors.errors]);
 
     console.log(`Found ${descriptors.length} copybook descriptors:`);
-    return { descriptors, variableAccumulator, programInfoAccumulator };
+    return {
+      descriptors,
+      variableAccumulator,
+      programInfo: visitor.programInfo,
+    };
   }
 }
 
@@ -239,12 +235,18 @@ export class NameResolver {
   }
 }
 
+class ProgramInfo {
+  public readonly sections: string[] = [];
+  public procedureDivisionNameStart?: number;
+  public procedureDivisionNameEnd?: number;
+}
+
 export class ProgramVisitor extends ProgramParserVisitor<CopybookDescriptor[]> {
+  public readonly programInfo: ProgramInfo = new ProgramInfo();
   private readonly parentNameResolver: NameResolver = new NameResolver();
 
   public constructor(
     private readonly variableAccumulator: VariableAccumulator,
-    private readonly programInfoAccumulator: ProgramInfoAccumulator,
     private readonly messageService: MessageService,
   ) {
     super();
@@ -363,19 +365,15 @@ export class ProgramVisitor extends ProgramParserVisitor<CopybookDescriptor[]> {
   visitProcedureSection = (
     ctx: ProcedureSectionContext,
   ): CopybookDescriptor[] => {
-    this.programInfoAccumulator.sections.push(
-      ctx.sectionName().getText().toUpperCase(),
-    );
+    this.programInfo.sections.push(ctx.sectionName().getText().toUpperCase());
     return super.visitChildren(ctx) ?? [];
   };
 
   visitProcedureDivision = (
     ctx: ProcedureDivisionContext,
   ): CopybookDescriptor[] => {
-    this.programInfoAccumulator.procedureDivisionNameStart =
-      ctx.PROCEDURE().symbol.line;
-    this.programInfoAccumulator.procedureDivisionNameEnd =
-      ctx.DOT_FS().symbol.line;
+    this.programInfo.procedureDivisionNameStart = ctx.PROCEDURE().symbol.line;
+    this.programInfo.procedureDivisionNameEnd = ctx.DOT_FS().symbol.line;
     return super.visitChildren(ctx) ?? [];
   };
 
