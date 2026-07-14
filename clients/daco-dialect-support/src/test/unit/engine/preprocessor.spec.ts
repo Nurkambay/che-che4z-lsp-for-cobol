@@ -13,9 +13,16 @@
  */
 
 import { Uri, DiagnosticSeverity } from "vscode";
-import { DaCoPreprocessor } from "../../../engine/preprocessor";
+import { Range } from "./__mocks__/vscode";
+import {
+  DaCoPreprocessor,
+  NameResolver,
+  ProgramInfoAccumulator,
+  ProgramVisitor,
+} from "../../../engine/preprocessor";
 import { createMessageService } from "./utils";
 import { SettingsService } from "../../../engine/services/settings";
+import { VariableAccumulator } from "../../../engine/model";
 
 describe("DaCoPreprocessor test", () => {
   const HEADER_0 =
@@ -61,6 +68,41 @@ describe("DaCoPreprocessor test", () => {
     jest
       .spyOn(SettingsService, "getPredefinedSections")
       .mockImplementation(() => []);
+  });
+
+  it("should fallback when layoutId is missing", () => {
+    const visitor = new ProgramVisitor(
+      new VariableAccumulator(),
+      new ProgramInfoAccumulator(),
+      createMessageService(),
+    );
+
+    const ctx = {
+      layoutId: () => null,
+      getChildCount: () => 0,
+      getChild: () => null,
+    } as any;
+
+    const result = visitor.visitCopyMaid(ctx);
+    expect(result).toEqual([]);
+  });
+
+  it("should fallback when DACO_COPYBOOK_IDENTIFIER is missing", () => {
+    const visitor = new ProgramVisitor(
+      new VariableAccumulator(),
+      new ProgramInfoAccumulator(),
+      createMessageService(),
+    );
+
+    const ctx = {
+      DACO_COPYBOOK_IDENTIFIER: () => null,
+      getChildCount: () => 0,
+      getChild: () => null,
+      LEVEL_NUMBER: () => ({ getText: () => "01" }),
+    } as any;
+
+    const result = visitor.visitVariableEntry(ctx);
+    expect(result).toEqual([]);
   });
 
   it("should report a diagnostic for mismatched layout identifier", async () => {
@@ -241,5 +283,30 @@ describe("DaCoPreprocessor test", () => {
     );
     expect(context.addDiagnostic).toHaveBeenCalled();
     expect(context.replace).toHaveBeenCalled();
+  });
+});
+
+describe("name resolver test", () => {
+  let nameResolver: NameResolver;
+  const range = new Range(0, 0, 1, 1) as any;
+
+  beforeEach(() => {
+    nameResolver = new NameResolver();
+  });
+
+  it("should return undefined when parent name is missing", () => {
+    nameResolver.pushName(1, "TEST", range);
+    const result = nameResolver.getParentName(1);
+    expect(result).toBeUndefined();
+  });
+
+  it("should return proper parent name", () => {
+    nameResolver.pushName(1, "TEST1", range);
+    nameResolver.pushName(3, "TEST3", range);
+    nameResolver.pushName(5, "TEST5", range);
+    nameResolver.pushName(3, "TEST3-2", range);
+
+    const result = nameResolver.getParentName(5);
+    expect(result).toStrictEqual({ name: "TEST3-2", range });
   });
 });

@@ -13,33 +13,61 @@
  */
 
 import * as vscode from "vscode";
-import {
-  IDocumentProcessingContext,
-  Item,
-  Token,
-} from "@code4z/cobol-dialect-api";
 import * as antlr from "antlr4ng";
+import { IDocumentProcessingContext } from "@code4z/cobol-dialect-api";
+import { MessageService } from "./services/MessageService";
+import { processCopyFrom } from "./modifiers/copyfrom";
+import { CopybookModifier } from "./modifiers/copybook";
+import { generatePredefinedSections } from "./modifiers/predefined";
+import { StatementsModifier } from "./modifiers/statements";
+import { addParsingErrors } from "./util";
+import {
+  concatResults,
+  constructRange,
+  constructRangeFromTokens,
+  createOptionsStr,
+} from "./modifiers/modifier.utils";
+import {
+  CopyMaidContext,
+  ProcedureDivisionContext,
+  ProcedureSectionContext,
+  ProgramParser,
+  SkipCopyMaidContext,
+  VariableEntryContext,
+} from "../generated/ProgramParser";
+import { ProgramLexer } from "../generated/ProgramLexer";
 import {
   CollectingErrorListener,
-  DaCoVisitor,
-  StatementDescriptor,
-} from "./parsing";
-import { MessageService } from "./services/MessageService";
-import { DaCoLexer } from "../generated/DaCoLexer";
-import { DaCoParser } from "../generated/DaCoParser";
-import { processCopyFrom } from "./copyfrom";
-import { CopybookPreprocessor } from "./copybook";
-import { addParsingErrors } from "./util";
-import { generatePredefinedSections } from "./predefined";
+  CopybookDescriptor,
+  CopybookDescriptorPD,
+  VariableAccumulator,
+  VariableDescriptor,
+} from "./model";
+import { ProgramParserVisitor } from "../generated/ProgramParserVisitor";
+
+type CopyFromOptions =
+  | { kind: "COPY_FROM"; suffix: string }
+  | { kind: "REGULAR_OPTIONS"; options: string };
+
+export class ProgramInfoAccumulator {
+  public readonly sections: string[] = [];
+  public procedureDivisionNameStart?: number;
+  public procedureDivisionNameEnd?: number;
+}
 
 export class DaCoPreprocessor {
-  private readonly copybookPreprocessor: CopybookPreprocessor;
+  private readonly copybookModifier: CopybookModifier;
+  private readonly statementsModifier: StatementsModifier;
 
   constructor(
     private readonly outputChannel: vscode.OutputChannel,
     private readonly messageService: MessageService,
   ) {
-    this.copybookPreprocessor = new CopybookPreprocessor(
+    this.copybookModifier = new CopybookModifier(
+      this.messageService,
+      outputChannel,
+    );
+    this.statementsModifier = new StatementsModifier(
       this.messageService,
       outputChannel,
     );
@@ -51,23 +79,36 @@ export class DaCoPreprocessor {
     text: string,
   ) {
     text = this.cleanup(context, text);
-    const { variables, programInfo } = await this.copybookPreprocessor.execute(
+
+    const variableAccumulator = new VariableAccumulator();
+    const programInfoAccumulator = new ProgramInfoAccumulator();
+
+    const descriptors = this.collectCopybookDescriptors(
       context,
       text,
+      variableAccumulator,
+      programInfoAccumulator,
     );
+
+    await this.copybookModifier.execute(
+      context,
+      text,
+      descriptors,
+      variableAccumulator,
+    );
+
+    const variables = variableAccumulator
+      .generateDescriptors()
+      .filter((d): d is VariableDescriptor => !!d && "type" in d);
 
     processCopyFrom(context, variables, this.messageService);
     generatePredefinedSections(
       context,
-      programInfo.sections,
-      programInfo.procedureDivisionNameEnd,
+      programInfoAccumulator.sections,
+      programInfoAccumulator.procedureDivisionNameEnd,
     );
 
-    const statementDescriptors = this.collectStatementsDescriptors(
-      context,
-      text,
-    );
-    this.processStatements(statementDescriptors, context);
+    this.statementsModifier.execute(context, text);
   }
 
   private cleanup(context: IDocumentProcessingContext, text: string): string {
@@ -127,89 +168,17 @@ export class DaCoPreprocessor {
     };
   }
 
-  private processStatements(
-    descriptors: StatementDescriptor[],
-    context: IDocumentProcessingContext,
-  ) {
-    descriptors.forEach((descriptor) =>
-      console.log(
-        `Statement Descriptor: type=${descriptor.type}, range=${JSON.stringify(
-          descriptor.statementRange,
-        )}`,
-      ),
-    );
-    descriptors.forEach((descriptor) => {
-      this.outputChannel.appendLine(
-        `Statement Descriptor: ${JSON.stringify(descriptor)}`,
-      );
-      if (descriptor.children.length > 0) {
-        context.replaceWithMap(
-          descriptor.range,
-          descriptor.statementRange,
-          this.traverseChildren(descriptor.children),
-          descriptor.filler,
-        );
-      } else {
-        context.replace(descriptor.statementRange, descriptor.filler);
-      }
-      descriptor.diagnostics.forEach((d) => {
-        context.addDiagnostic(
-          new vscode.Diagnostic(
-            descriptor.statementRange,
-            this.messageService.get(d.template),
-            d.severity,
-          ),
-        );
-      });
-    });
-  }
-
-  private traverseChildren(children: StatementDescriptor[]): Item[] {
-    const items: Item[] = [];
-    let index = 0;
-    children.forEach((child) => {
-      if (child.type === "VARIABLE") {
-        const tokens: Token[] = [];
-        const name = `VAR_${index++}`;
-
-        if (child.children.length > 0) {
-          this.createTokens(tokens, name, child.children);
-        }
-        const item: Item = {
-          type: "VARIABLE",
-          tokens,
-        };
-        items.push(item);
-      }
-    });
-    return items;
-  }
-
-  private createTokens(
-    tokens: Token[],
-    name: string,
-    children: StatementDescriptor[],
-  ): Token[] {
-    let index = 0;
-    children.forEach((child) => {
-      if (child.type === "VARIABLE_USAGE") {
-        const tokenName = `${name}_USG_${index++}`;
-        const token: Token = { name: tokenName, range: child.statementRange };
-        tokens.push(token);
-        this.createTokens(tokens, tokenName, child.children);
-      }
-    });
-    return tokens;
-  }
-
-  private collectStatementsDescriptors(
+  private collectCopybookDescriptors(
     context: IDocumentProcessingContext,
     text: string,
-  ): StatementDescriptor[] {
+    variableAccumulator: VariableAccumulator,
+    programInfoAccumulator: ProgramInfoAccumulator,
+  ): CopybookDescriptor[] {
     const charStream = antlr.CharStream.fromString(text);
-    const lexer = new DaCoLexer(charStream);
+
+    const lexer = new ProgramLexer(charStream);
     const tokenStream = new antlr.CommonTokenStream(lexer);
-    const parser = new DaCoParser(tokenStream);
+    const parser = new ProgramParser(tokenStream);
     parser.setMessageService(this.messageService);
 
     lexer.removeErrorListeners();
@@ -221,20 +190,201 @@ export class DaCoPreprocessor {
     lexer.addErrorListener(lexerErrors);
     parser.addErrorListener(parserErrors);
 
-    try {
-      const tree = parser.startRule();
+    const tree = parser.startRule();
+    const visitor = new ProgramVisitor(
+      variableAccumulator,
+      programInfoAccumulator,
+      this.messageService,
+    );
+    const descriptors = visitor.visit(tree) || [];
 
-      addParsingErrors(context, [
-        ...lexerErrors.errors,
-        ...parserErrors.errors,
-      ]);
+    this.outputChannel.appendLine(
+      `Parsing completed with ${lexerErrors.errors.length} lexer errors and ${parserErrors.errors.length} parser errors`,
+    );
 
-      return new DaCoVisitor().visit(tree) || [];
-    } catch (e) {
-      this.outputChannel.appendLine(
-        "Error during parsing: " + JSON.stringify(e),
-      );
-      return [];
+    addParsingErrors(context, [...lexerErrors.errors, ...parserErrors.errors]);
+
+    console.log(`Found ${descriptors.length} copybook descriptors:`);
+    return descriptors;
+  }
+}
+
+export class NameResolver {
+  private readonly nameStack: {
+    level: number;
+    name: string;
+    range: vscode.Range;
+  }[] = [];
+  private lastLevel: number = 0;
+
+  public getParentName(
+    level: number,
+  ): { name: string; range: vscode.Range } | undefined {
+    for (let i = this.nameStack.length - 1; i >= 0; i--) {
+      if (this.nameStack[i].level < level) {
+        return { name: this.nameStack[i].name, range: this.nameStack[i].range };
+      }
+    }
+    return undefined;
+  }
+
+  public pushName(level: number, name: string, range: vscode.Range) {
+    if (this.lastLevel < level) {
+      this.nameStack.push({ level, name, range });
+      this.lastLevel = level;
+    } else {
+      // Pop all names with level greater than or equal to the current level
+      while (
+        this.nameStack.length > 0 &&
+        (this.nameStack.at(-1)?.level ?? 0) >= level
+      ) {
+        this.nameStack.pop();
+      }
+      this.nameStack.push({ level, name, range });
+      this.lastLevel = level;
     }
   }
+}
+
+export class ProgramVisitor extends ProgramParserVisitor<CopybookDescriptor[]> {
+  private readonly parentNameResolver: NameResolver = new NameResolver();
+
+  public constructor(
+    private readonly variableAccumulator: VariableAccumulator,
+    private readonly programInfoAccumulator: ProgramInfoAccumulator,
+    private readonly messageService: MessageService,
+  ) {
+    super();
+  }
+
+  private parseCopyFromOptions(options: string): CopyFromOptions {
+    const trimmed = options.trim();
+
+    const match = /^COPY-FROM\s+([A-Z0-9]+)$/i.exec(trimmed);
+
+    if (!match) {
+      return {
+        kind: "REGULAR_OPTIONS",
+        options,
+      };
+    }
+
+    const suffix = match[1].toUpperCase();
+
+    if (!/^[A-Z0-9]{2}$/.test(suffix)) {
+      const message = this.messageService.get(
+        "validation.copy_from_suffix",
+        suffix,
+      );
+      throw new Error(message);
+    }
+
+    return {
+      kind: "COPY_FROM",
+      suffix,
+    };
+  }
+
+  visitCopyMaid = (ctx: CopyMaidContext): CopybookDescriptor[] => {
+    const layoutId = ctx.layoutId();
+    if (!layoutId) {
+      return super.visitChildren(ctx) ?? [];
+    }
+
+    const layoutUsage = ctx.layoutUsage();
+    const name = layoutId.getText();
+    const suffix = layoutUsage?.getText();
+
+    console.log("Copybook level: " + ctx.LEVEL_NUMBER()?.getText());
+
+    const level = Number.parseInt(ctx.LEVEL_NUMBER()?.getText() ?? "0", 10);
+    const statementRange = constructRange(ctx);
+    const nameRange = constructRange(layoutId);
+
+    const parentInfo = this.parentNameResolver.getParentName(level);
+    const descriptor = new CopybookDescriptor(
+      statementRange,
+      nameRange,
+      level,
+      name,
+      suffix,
+      layoutUsage ? constructRange(layoutUsage) : undefined,
+      parentInfo?.name,
+      parentInfo?.range,
+    );
+    this.variableAccumulator.addCopybookPlaceholder(descriptor);
+
+    return [descriptor, ...(super.visitChildren(ctx) ?? [])];
+  };
+
+  visitVariableEntry = (ctx: VariableEntryContext): CopybookDescriptor[] => {
+    const newName = ctx.DACO_COPYBOOK_IDENTIFIER()?.getText()?.toUpperCase();
+    const level = Number.parseInt(ctx.LEVEL_NUMBER()?.getText() ?? "0", 10);
+
+    if (newName) {
+      const nameRange = constructRangeFromTokens(
+        ctx.DACO_COPYBOOK_IDENTIFIER().getSymbol(),
+        ctx.DACO_COPYBOOK_IDENTIFIER().getSymbol(),
+      );
+
+      this.parentNameResolver.pushName(level, newName, nameRange);
+
+      const optionsText = createOptionsStr(ctx.variableOptionEntry());
+      const parsed = this.parseCopyFromOptions(optionsText);
+
+      if (parsed.kind === "COPY_FROM") {
+        const copyFromRange = constructRange(ctx.variableOptionEntry());
+        this.variableAccumulator.add({
+          levelRange: constructRangeFromTokens(
+            ctx.LEVEL_NUMBER().getSymbol(),
+            ctx.LEVEL_NUMBER().getSymbol(),
+          ),
+          level: level,
+          copyFromRange: copyFromRange,
+          nameRange: nameRange,
+          name: newName,
+          suffix: parsed.suffix,
+          type: "COPY-FROM",
+        });
+      } else {
+        this.variableAccumulator.add({
+          levelRange: constructRangeFromTokens(
+            ctx.LEVEL_NUMBER().getSymbol(),
+            ctx.LEVEL_NUMBER().getSymbol(),
+          ),
+          level: level,
+          nameRange: nameRange,
+          name: newName,
+          type: "DEFINITION",
+          options: optionsText,
+        });
+      }
+    }
+    return super.visitChildren(ctx) ?? [];
+  };
+
+  visitSkipCopyMaid = (ctx: SkipCopyMaidContext): CopybookDescriptor[] => {
+    return [new CopybookDescriptorPD(constructRange(ctx))];
+  };
+
+  visitProcedureSection = (
+    ctx: ProcedureSectionContext,
+  ): CopybookDescriptor[] => {
+    this.programInfoAccumulator.sections.push(
+      ctx.sectionName().getText().toUpperCase(),
+    );
+    return super.visitChildren(ctx) ?? [];
+  };
+
+  visitProcedureDivision = (
+    ctx: ProcedureDivisionContext,
+  ): CopybookDescriptor[] => {
+    this.programInfoAccumulator.procedureDivisionNameStart =
+      ctx.PROCEDURE().symbol.line;
+    this.programInfoAccumulator.procedureDivisionNameEnd =
+      ctx.DOT_FS().symbol.line;
+    return super.visitChildren(ctx) ?? [];
+  };
+
+  protected aggregateResult = concatResults;
 }

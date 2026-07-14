@@ -1,5 +1,5 @@
-import { generatePredefinedSections } from "../../../engine/predefined";
-import { SettingsService } from "../../../engine/services/settings";
+import { generatePredefinedSections } from "../../../../engine/modifiers/predefined";
+import { SettingsService } from "../../../../engine/services/settings";
 
 /*
  * Copyright (c) 2026 Broadcom.

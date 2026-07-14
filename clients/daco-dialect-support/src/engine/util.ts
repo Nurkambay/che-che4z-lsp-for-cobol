@@ -13,7 +13,7 @@
  */
 import * as vscode from "vscode";
 import { IDocumentProcessingContext } from "@code4z/cobol-dialect-api";
-import { ParseError } from "./parsing";
+import { ParseError } from "./model";
 
 const FILLER_NAME = "FILLER";
 

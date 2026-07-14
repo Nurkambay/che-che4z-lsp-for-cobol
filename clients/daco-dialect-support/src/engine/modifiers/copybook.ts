@@ -14,26 +14,31 @@
 import * as vscode from "vscode";
 import * as antlr from "antlr4ng";
 import { IDocumentProcessingContext } from "@code4z/cobol-dialect-api";
+import { MessageService } from "../services/MessageService";
+import { addParsingErrors, extractSuffix, updateVariableName } from "../util";
+import { VariableLexer } from "../../generated/VariableLexer";
+import {
+  DataDescriptionEntryFormat1Context,
+  DataRedefinesClauseContext,
+  VariableParser,
+} from "../../generated/VariableParser";
+import { VariableParserVisitor } from "../../generated/VariableParserVisitor";
+import {
+  concatResults,
+  constructRange,
+  createOptionsStr,
+} from "./modifier.utils";
 import {
   CollectingErrorListener,
-  CopybookContentVisitor,
   CopybookDescriptor,
   CopybookDescriptorPD,
-  CopybookVisitor,
-  ProgramInfoAccumulator,
   VariableAccumulator,
   VariableDescriptor,
-} from "./parsing";
-import { CopybookLexer } from "../generated/CopybookLexer";
-import { MessageService } from "./services/MessageService";
-import { CopybookParser } from "../generated/CopybookParser";
-import { addParsingErrors, extractSuffix, updateVariableName } from "./util";
-import { VariableLexer } from "../generated/VariableLexer";
-import { VariableParser } from "../generated/VariableParser";
+} from "../model";
 
 const WRK_SUFFIX = "WRK";
 
-export class CopybookPreprocessor {
+export class CopybookModifier {
   private firstCopybookLevel: number = 0;
 
   public constructor(
@@ -44,71 +49,8 @@ export class CopybookPreprocessor {
   public async execute(
     context: IDocumentProcessingContext,
     text: string,
-  ): Promise<{
-    variables: VariableDescriptor[];
-    programInfo: ProgramInfoAccumulator;
-  }> {
-    const accumulator = new VariableAccumulator();
-    const { descriptors, programInfo } = this.collectCopybookDescriptors(
-      context,
-      text,
-      accumulator,
-    );
-
-    await this.processCopybooks(descriptors, context, accumulator);
-    return {
-      variables: accumulator
-        .generateDescriptors()
-        .filter((d): d is VariableDescriptor => !!d && "type" in d),
-      programInfo: programInfo,
-    };
-  }
-
-  private collectCopybookDescriptors(
-    context: IDocumentProcessingContext,
-    text: string,
-    accumulator: VariableAccumulator,
-  ): {
-    descriptors: CopybookDescriptor[];
-    programInfo: ProgramInfoAccumulator;
-  } {
-    const charStream = antlr.CharStream.fromString(text);
-
-    const lexer = new CopybookLexer(charStream);
-    const tokenStream = new antlr.CommonTokenStream(lexer);
-    const parser = new CopybookParser(tokenStream);
-    parser.setMessageService(this.messageService);
-
-    lexer.removeErrorListeners();
-    parser.removeErrorListeners();
-
-    const lexerErrors = new CollectingErrorListener();
-    const parserErrors = new CollectingErrorListener();
-
-    lexer.addErrorListener(lexerErrors);
-    parser.addErrorListener(parserErrors);
-
-    const tree = parser.startRule();
-    const visitor = new CopybookVisitor(accumulator, this.messageService);
-    const descriptors = visitor.visit(tree) || [];
-
-    this.outputChannel.appendLine(
-      `Parsing completed with ${lexerErrors.errors.length} lexer errors and ${parserErrors.errors.length} parser errors`,
-    );
-
-    addParsingErrors(context, [...lexerErrors.errors, ...parserErrors.errors]);
-
-    console.log(`Found ${descriptors.length} copybook descriptors:`);
-    return {
-      descriptors: descriptors,
-      programInfo: visitor.programInfo,
-    };
-  }
-
-  private async processCopybooks(
     descriptors: CopybookDescriptor[],
-    context: IDocumentProcessingContext,
-    accumulator: VariableAccumulator,
+    variableAccumulator: VariableAccumulator,
   ) {
     descriptors.forEach((descriptor) =>
       console.log(
@@ -173,7 +115,7 @@ export class CopybookPreprocessor {
           descriptor.level,
           parentNameSuffix,
         );
-        accumulator.insertCopybookVariables(descriptor, variables);
+        variableAccumulator.insertCopybookVariables(descriptor, variables);
       }
     }
   }
@@ -307,4 +249,55 @@ export class CopybookPreprocessor {
     }
     return level;
   }
+}
+
+export class CopybookContentVisitor extends VariableParserVisitor<
+  VariableDescriptor[]
+> {
+  visitDataDescriptionEntryFormat1? = (
+    ctx: DataDescriptionEntryFormat1Context,
+  ): VariableDescriptor[] => {
+    const levelRange = constructRange(ctx.levelNumber());
+    const level = Number.parseInt(ctx.levelNumber().getText());
+    const entryName = ctx.entryName();
+    const name = entryName?.getText() ?? "";
+
+    if (name === "" || !entryName) {
+      return super.visitChildren(ctx) ?? [];
+    }
+    const nameRange = constructRange(entryName);
+
+    return [
+      {
+        levelRange: levelRange,
+        level: level,
+        nameRange: nameRange,
+        name: name,
+        type: "DEFINITION",
+        options: createOptionsStr(ctx.variableOptionEntry()),
+      },
+      ...(super.visitChildren(ctx) ?? []),
+    ];
+  };
+
+  visitDataRedefinesClause? = (
+    ctx: DataRedefinesClauseContext,
+  ): VariableDescriptor[] => {
+    const redefinitionName = ctx.dataName();
+
+    if (redefinitionName) {
+      const nameRange = constructRange(redefinitionName);
+      return [
+        {
+          nameRange: nameRange,
+          name: redefinitionName.getText(),
+          type: "REDEFINITION",
+        },
+        ...(super.visitChildren(ctx) ?? []),
+      ];
+    }
+    return super.visitChildren(ctx) ?? [];
+  };
+
+  protected aggregateResult = concatResults;
 }

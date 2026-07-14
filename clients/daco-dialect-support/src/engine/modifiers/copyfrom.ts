@@ -13,13 +13,13 @@
  */
 import * as vscode from "vscode";
 import { IDocumentProcessingContext } from "@code4z/cobol-dialect-api";
-import { extractSuffix, updateVariableName } from "./util";
+import { extractSuffix, updateVariableName } from "../util";
+import { MessageService } from "../services/MessageService";
 import {
   CopyFromVariableDescriptor,
   RegularVariableDescriptor,
   VariableDescriptor,
-} from "./parsing";
-import { MessageService } from "./services/MessageService";
+} from "../model";
 
 export function processCopyFrom(
   context: IDocumentProcessingContext,

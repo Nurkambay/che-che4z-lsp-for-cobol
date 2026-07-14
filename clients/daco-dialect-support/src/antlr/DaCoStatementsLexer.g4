@@ -12,7 +12,7 @@
  * and DAF development standards
  */
 
-lexer grammar DaCoLexer;
+lexer grammar DaCoStatementsLexer;
 
 channels{COMMENTS}
 import TechnicalLexer;
