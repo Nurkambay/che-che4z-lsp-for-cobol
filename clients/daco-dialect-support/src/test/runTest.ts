@@ -29,7 +29,11 @@ async function main() {
 		const launchArgs = ['--user-data-dir', `${os.tmpdir()}`];
 
 		// Download VS Code, unzip it and run the integration test
-		await runTests({ extensionDevelopmentPath, extensionTestsPath, launchArgs });
+		// VS Code >=1.131 removed the `Contents/MacOS/Electron` compatibility
+		// symlink on macOS (only `Code` remains), which breaks how VS Code is
+		// launched for extension tests: https://github.com/microsoft/vscode-test/issues/348
+		// Pin to the last version that still ships the symlink until that's fixed upstream.
+		await runTests({ version: '1.130.0', extensionDevelopmentPath, extensionTestsPath, launchArgs });
 	} catch (err) {
 		console.error('Failed to run tests');
 		process.exit(1);

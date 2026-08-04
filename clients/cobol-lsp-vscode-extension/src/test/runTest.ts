@@ -57,6 +57,11 @@ async function main() {
       };
     } else {
       options = {
+        // VS Code >=1.131 removed the `Contents/MacOS/Electron` compatibility
+        // symlink on macOS (only `Code` remains), which breaks how VS Code is
+        // launched for extension tests: https://github.com/microsoft/vscode-test/issues/348
+        // Pin to the last version that still ships the symlink until that's fixed upstream.
+        version: "1.130.0",
         extensionDevelopmentPath,
         extensionTestsPath,
         launchArgs,
