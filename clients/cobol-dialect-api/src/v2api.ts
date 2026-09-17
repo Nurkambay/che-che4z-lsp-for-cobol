@@ -79,6 +79,7 @@ export const getV2Api = async (extensionId: string): Promise<V2Api | Error> => {
               name: dialect.name,
               description: dialect.description,
               snippets: dialect.snippets,
+              keywords: dialect.keywords,
               isCopyStatement: dialect.isCopyStatement,
             },
             handler,
@@ -135,6 +136,7 @@ export interface __ExtensionV2DialectDetail {
   name: string;
   description: string;
   snippets: vscode.Uri;
+  keywords?: vscode.Uri;
   isCopyStatement?: CopyStatementParser;
 }
 
@@ -149,6 +151,7 @@ export interface V2DialectDetail {
   name: string;
   description: string;
   snippets: vscode.Uri;
+  keywords?: vscode.Uri;
   isCopyStatement?: CopyStatementParser;
 }
 
